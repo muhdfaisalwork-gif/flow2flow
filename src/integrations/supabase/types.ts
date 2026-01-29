@@ -118,6 +118,56 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_versions: {
+        Row: {
+          change_summary: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          edges: Json
+          id: string
+          name: string
+          nodes: Json
+          settings: Json
+          version_number: number
+          workflow_id: string
+        }
+        Insert: {
+          change_summary?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          name: string
+          nodes?: Json
+          settings?: Json
+          version_number: number
+          workflow_id: string
+        }
+        Update: {
+          change_summary?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          name?: string
+          nodes?: Json
+          settings?: Json
+          version_number?: number
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_versions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflows: {
         Row: {
           created_at: string
@@ -125,9 +175,11 @@ export type Database = {
           edges: Json
           id: string
           is_active: boolean
+          is_public: boolean
           name: string
           nodes: Json
           settings: Json
+          share_token: string | null
           updated_at: string
           user_id: string
         }
@@ -137,9 +189,11 @@ export type Database = {
           edges?: Json
           id?: string
           is_active?: boolean
+          is_public?: boolean
           name?: string
           nodes?: Json
           settings?: Json
+          share_token?: string | null
           updated_at?: string
           user_id: string
         }
@@ -149,9 +203,11 @@ export type Database = {
           edges?: Json
           id?: string
           is_active?: boolean
+          is_public?: boolean
           name?: string
           nodes?: Json
           settings?: Json
+          share_token?: string | null
           updated_at?: string
           user_id?: string
         }
