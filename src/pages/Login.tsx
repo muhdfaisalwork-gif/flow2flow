@@ -87,7 +87,7 @@ const Login: FC = () => {
             </div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>
-              Sign in to your FlowForge account
+              Sign in to your Flow2Flow account
             </CardDescription>
           </CardHeader>
 

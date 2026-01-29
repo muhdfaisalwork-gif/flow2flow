@@ -113,7 +113,7 @@ const Dashboard: FC = () => {
             <div className="p-1.5 rounded-lg gradient-primary">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg">FlowForge</span>
+            <span className="font-bold text-lg">Flow2Flow</span>
           </Link>
 
           <div className="flex items-center gap-4">
