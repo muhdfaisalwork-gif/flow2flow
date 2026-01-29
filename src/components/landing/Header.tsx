@@ -50,11 +50,9 @@ export function Header() {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" className="gap-2" asChild>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-                <Github className="w-4 h-4" />
-                Star on GitHub
-              </a>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Github className="w-4 h-4" />
+              Sign in with GitHub
             </Button>
             <Link to="/dashboard">
               <Button size="sm" className="gradient-primary text-white border-0 glow-primary">
@@ -96,11 +94,9 @@ export function Header() {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
-                <Button variant="outline" size="sm" className="gap-2 justify-center" asChild>
-                  <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-                    <Github className="w-4 h-4" />
-                    Star on GitHub
-                  </a>
+                <Button variant="outline" size="sm" className="gap-2 justify-center">
+                  <Github className="w-4 h-4" />
+                  Sign in with GitHub
                 </Button>
                 <Button size="sm" className="gradient-primary text-white border-0">
                   Get Started Free
