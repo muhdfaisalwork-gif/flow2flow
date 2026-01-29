@@ -71,7 +71,7 @@ export function Header() {
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
             <Button variant="ghost" size="sm" className="gap-2" asChild>
-              <a href="https://github.com/flow2flow" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/muhdfaisalwork-gif/flow2flow" target="_blank" rel="noopener noreferrer">
                 <Github className="w-4 h-4" />
                 <Star className="w-3 h-3" />
                 Star on GitHub
@@ -134,7 +134,7 @@ export function Header() {
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
                 <Button variant="outline" size="sm" className="gap-2 justify-center" asChild>
-                  <a href="https://github.com/flow2flow" target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/muhdfaisalwork-gif/flow2flow" target="_blank" rel="noopener noreferrer">
                     <Github className="w-4 h-4" />
                     <Star className="w-3 h-3" />
                     Star on GitHub
