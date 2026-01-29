@@ -1,1 +1,4 @@
 project_id = "hgmqgxstqlftzppfkrzj"
+
+[functions.workflow-ai]
+verify_jwt = false

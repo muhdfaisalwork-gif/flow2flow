@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUIStore } from '@/stores/uiStore';
 import { useWorkflowStore } from '@/stores/workflowStore';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getNodeDefinition } from '@/lib/nodes/definitions';
 
 interface NodeConfigPanelProps {
@@ -18,6 +19,7 @@ interface NodeConfigPanelProps {
 const NodeConfigPanel: FC<NodeConfigPanelProps> = ({ isOpen }) => {
   const { selectedNodeId, setConfigPanelOpen } = useUIStore();
   const { nodes, updateNode } = useWorkflowStore();
+  const isMobile = useIsMobile();
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const nodeDefinition = selectedNode ? getNodeDefinition(selectedNode.data.type) : null;
@@ -39,6 +41,93 @@ const NodeConfigPanel: FC<NodeConfigPanelProps> = ({ isOpen }) => {
     updateNode(selectedNodeId, { isConfigured: true });
   };
 
+  // Mobile: Bottom sheet style
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {isOpen && selectedNode && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+              onClick={() => setConfigPanelOpen(false)}
+            />
+            
+            {/* Bottom Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] rounded-t-2xl border-t border-border/50 bg-card flex flex-col"
+            >
+              {/* Handle */}
+              <div className="flex justify-center py-2">
+                <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 pb-3 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="p-1.5 rounded-lg"
+                    style={{ backgroundColor: `${selectedNode.data.color}20` }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-sm"
+                      style={{ backgroundColor: selectedNode.data.color }}
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">{selectedNode.data.label}</h3>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {selectedNode.data.category}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setConfigPanelOpen(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Content */}
+              <ScrollArea className="flex-1 max-h-[60vh]">
+                <div className="p-4 space-y-4">
+                  {/* Node Label */}
+                  <div className="space-y-2">
+                    <Label htmlFor="node-label-mobile">Node Name</Label>
+                    <Input
+                      id="node-label-mobile"
+                      value={selectedNode.data.label}
+                      onChange={(e) => handleLabelChange(e.target.value)}
+                      placeholder="Enter node name"
+                      className="bg-background/50"
+                    />
+                  </div>
+
+                  {/* Dynamic config */}
+                  {renderNodeConfig(selectedNode.data.type, selectedNode.data.config, handleConfigChange)}
+
+                  <Button onClick={markConfigured} className="w-full mt-4">
+                    Mark as Configured
+                  </Button>
+                </div>
+              </ScrollArea>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // Desktop: Side panel
   return (
     <AnimatePresence>
       {isOpen && selectedNode && (
