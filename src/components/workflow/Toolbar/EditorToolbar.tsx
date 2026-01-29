@@ -3,7 +3,7 @@ import {
   Save, Play, Undo, Redo, Settings, 
   PanelLeftClose, PanelLeft, Sparkles,
   ChevronLeft, MoreVertical, Download, Upload,
-  FileJson, Share2, Copy, ExternalLink
+  FileJson, Share2, Copy, ExternalLink, LayoutGrid, History, Link2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,9 +29,20 @@ import { exportWorkflow, importWorkflow, downloadWorkflow, type ExportFormat } f
 interface EditorToolbarProps {
   onSave?: () => void;
   onRun?: () => void;
+  onOpenTemplates?: () => void;
+  onOpenShare?: () => void;
+  onOpenVersions?: () => void;
+  workflowId?: string | null;
 }
 
-const EditorToolbar: FC<EditorToolbarProps> = ({ onSave, onRun }) => {
+const EditorToolbar: FC<EditorToolbarProps> = ({ 
+  onSave, 
+  onRun, 
+  onOpenTemplates, 
+  onOpenShare, 
+  onOpenVersions,
+  workflowId 
+}) => {
   const { isNodeLibraryOpen, toggleNodeLibrary, toggleAIAssistant, toggleSettings } = useUIStore();
   const { workflow, nodes, edges, updateWorkflowMeta, isDirty, setWorkflow } = useWorkflowStore();
   const isMobile = useIsMobile();
@@ -243,6 +254,14 @@ const EditorToolbar: FC<EditorToolbarProps> = ({ onSave, onRun }) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>New</DropdownMenuLabel>
+            <DropdownMenuItem onClick={onOpenTemplates}>
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Browse Templates...
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
             <DropdownMenuLabel>Import</DropdownMenuLabel>
             <DropdownMenuItem onClick={handleImport}>
               <Upload className="h-4 w-4 mr-2" />
@@ -283,6 +302,22 @@ const EditorToolbar: FC<EditorToolbarProps> = ({ onSave, onRun }) => {
             <DropdownMenuItem onClick={handleCopyToClipboard}>
               <Copy className="h-4 w-4 mr-2" />
               Copy to clipboard
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuLabel>Collaborate</DropdownMenuLabel>
+            <DropdownMenuItem onClick={onOpenShare} disabled={!workflowId}>
+              <Link2 className="h-4 w-4 mr-2" />
+              Share Workflow...
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuLabel>History</DropdownMenuLabel>
+            <DropdownMenuItem onClick={onOpenVersions} disabled={!workflowId}>
+              <History className="h-4 w-4 mr-2" />
+              Version History...
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

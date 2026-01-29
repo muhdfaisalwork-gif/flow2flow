@@ -11,8 +11,12 @@ import NodeLibrary from '@/components/workflow/Sidebar/NodeLibrary';
 import NodeConfigPanel from '@/components/workflow/Panel/NodeConfigPanel';
 import EditorToolbar from '@/components/workflow/Toolbar/EditorToolbar';
 import AIAssistant from '@/components/ai/AIAssistant';
+import TemplatesGallery from '@/components/workflow/TemplatesGallery';
+import ShareDialog from '@/components/workflow/ShareDialog';
+import VersionHistory from '@/components/workflow/VersionHistory';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import type { WorkflowNode, WorkflowEdge, Workflow } from '@/types/workflow';
 
 const WorkflowEditor: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,8 +25,15 @@ const WorkflowEditor: FC = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [isPublic, setIsPublic] = useState(false);
   
-  const { setWorkflow, workflow, nodes, edges, markClean } = useWorkflowStore();
+  // Dialog states
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isVersionsOpen, setIsVersionsOpen] = useState(false);
+  
+  const { setWorkflow, workflow, nodes, edges, markClean, updateWorkflowMeta } = useWorkflowStore();
   const { isNodeLibraryOpen, isConfigPanelOpen, isAIAssistantOpen } = useUIStore();
 
   useEffect(() => {
@@ -38,6 +49,8 @@ const WorkflowEditor: FC = () => {
       // Create new workflow
       setWorkflow(createNewWorkflow());
       setWorkflowId(null);
+      setShareToken(null);
+      setIsPublic(false);
     } else {
       // Load existing workflow
       const { data, error } = await supabase
@@ -79,9 +92,40 @@ const WorkflowEditor: FC = () => {
         updatedAt: data.updated_at,
       });
       setWorkflowId(data.id);
+      setShareToken(data.share_token || null);
+      setIsPublic(data.is_public || false);
     }
     
     setIsLoading(false);
+  };
+
+  const saveVersion = async (wfId: string) => {
+    if (!user || !workflow) return;
+
+    // Get the latest version number
+    const { data: versions } = await supabase
+      .from('workflow_versions')
+      .select('version_number')
+      .eq('workflow_id', wfId)
+      .order('version_number', { ascending: false })
+      .limit(1);
+
+    const nextVersion = versions && versions.length > 0 ? versions[0].version_number + 1 : 1;
+
+    // Save version
+    await supabase
+      .from('workflow_versions')
+      .insert([{
+        workflow_id: wfId,
+        version_number: nextVersion,
+        name: workflow.name,
+        description: workflow.description,
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
+        settings: JSON.parse(JSON.stringify(workflow.settings)),
+        created_by: user.id,
+        change_summary: `Saved at ${new Date().toLocaleTimeString()}`,
+      }]);
   };
 
   const handleSave = async () => {
@@ -103,6 +147,9 @@ const WorkflowEditor: FC = () => {
           .eq('id', workflowId);
 
         if (error) throw error;
+        
+        // Save version
+        await saveVersion(workflowId);
       } else {
         // Create new workflow
         const { data, error } = await supabase
@@ -124,6 +171,9 @@ const WorkflowEditor: FC = () => {
         setWorkflowId(data.id);
         // Update URL without navigation
         window.history.replaceState(null, '', `/workflow/${data.id}`);
+        
+        // Save initial version
+        await saveVersion(data.id);
       }
 
       markClean();
@@ -171,6 +221,36 @@ const WorkflowEditor: FC = () => {
     }
   };
 
+  const handleTemplateImport = (name: string, description: string, templateNodes: WorkflowNode[], templateEdges: WorkflowEdge[]) => {
+    setWorkflow({
+      ...createNewWorkflow(),
+      name,
+      description,
+      nodes: templateNodes,
+      edges: templateEdges,
+    });
+    setWorkflowId(null);
+    window.history.replaceState(null, '', '/workflow/new');
+  };
+
+  const handleShareUpdate = (newToken: string | null, newIsPublic: boolean) => {
+    setShareToken(newToken);
+    setIsPublic(newIsPublic);
+  };
+
+  const handleVersionRestore = (name: string, description: string, versionNodes: WorkflowNode[], versionEdges: WorkflowEdge[], settings: Workflow['settings']) => {
+    if (!workflow) return;
+    
+    setWorkflow({
+      ...workflow,
+      name,
+      description,
+      nodes: versionNodes,
+      edges: versionEdges,
+      settings,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
@@ -182,7 +262,14 @@ const WorkflowEditor: FC = () => {
   return (
     <ReactFlowProvider>
       <div className="h-screen w-full flex flex-col bg-background">
-        <EditorToolbar onSave={handleSave} onRun={handleRun} />
+        <EditorToolbar 
+          onSave={handleSave} 
+          onRun={handleRun}
+          onOpenTemplates={() => setIsTemplatesOpen(true)}
+          onOpenShare={() => setIsShareOpen(true)}
+          onOpenVersions={() => setIsVersionsOpen(true)}
+          workflowId={workflowId}
+        />
         
         <div className="flex-1 flex overflow-hidden">
           <NodeLibrary isOpen={isNodeLibraryOpen} />
@@ -195,6 +282,31 @@ const WorkflowEditor: FC = () => {
         </div>
 
         <AIAssistant isOpen={isAIAssistantOpen} />
+        
+        {/* Dialogs */}
+        <TemplatesGallery 
+          isOpen={isTemplatesOpen}
+          onClose={() => setIsTemplatesOpen(false)}
+          onImport={handleTemplateImport}
+        />
+        
+        <ShareDialog
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          workflowId={workflowId}
+          workflowName={workflow?.name || 'Untitled Workflow'}
+          currentShareToken={shareToken}
+          isPublic={isPublic}
+          onUpdate={handleShareUpdate}
+        />
+        
+        <VersionHistory
+          isOpen={isVersionsOpen}
+          onClose={() => setIsVersionsOpen(false)}
+          workflowId={workflowId}
+          currentWorkflow={workflow}
+          onRestore={handleVersionRestore}
+        />
       </div>
     </ReactFlowProvider>
   );
