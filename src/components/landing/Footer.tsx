@@ -46,7 +46,7 @@ export function Footer() {
               <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text">FlowForge</span>
+              <span className="text-xl font-bold gradient-text">Flow2Flow</span>
             </div>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
               The open-source workflow automation platform. Build, automate, and scale
@@ -90,7 +90,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} FlowForge. All rights reserved.
+            © {new Date().getFullYear()} Flow2Flow. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
             Made with ❤️ by the open-source community

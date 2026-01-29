@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Check, X, Minus } from "lucide-react";
 
 const competitors = [
-  { name: "FlowForge", highlight: true },
+  { name: "Flow2Flow", highlight: true },
   { name: "Zapier", highlight: false },
   { name: "Make", highlight: false },
   { name: "n8n", highlight: false },
@@ -47,7 +47,7 @@ export function ComparisonSection() {
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mt-4 mb-6">
             Why Choose{" "}
-            <span className="gradient-text">FlowForge</span>?
+            <span className="gradient-text">Flow2Flow</span>?
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             See how we stack up against the competition. Spoiler: we bring the best of all worlds together.

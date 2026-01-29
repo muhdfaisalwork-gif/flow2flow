@@ -32,7 +32,7 @@ export function Header() {
               </div>
               <div className="absolute inset-0 w-8 h-8 rounded-lg gradient-primary blur-lg opacity-50" />
             </div>
-            <span className="text-xl font-bold gradient-text">FlowForge</span>
+            <span className="text-xl font-bold gradient-text">Flow2Flow</span>
           </div>
 
           {/* Desktop Navigation */}
