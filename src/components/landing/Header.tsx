@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X, Zap } from "lucide-react";
+import { Menu, X, Zap, Github, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { lovable } from "@/integrations/lovable";
@@ -70,6 +70,13 @@ export function Header() {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
+            <Button variant="ghost" size="sm" className="gap-2" asChild>
+              <a href="https://github.com/flow2flow" target="_blank" rel="noopener noreferrer">
+                <Github className="w-4 h-4" />
+                <Star className="w-3 h-3" />
+                Star on GitHub
+              </a>
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
@@ -126,6 +133,13 @@ export function Header() {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
+                <Button variant="outline" size="sm" className="gap-2 justify-center" asChild>
+                  <a href="https://github.com/flow2flow" target="_blank" rel="noopener noreferrer">
+                    <Github className="w-4 h-4" />
+                    <Star className="w-3 h-3" />
+                    Star on GitHub
+                  </a>
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
