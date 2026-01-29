@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { nodeDefinitions, nodeCategories } from '@/lib/nodes/definitions';
 import { useUIStore } from '@/stores/uiStore';
+import { useWorkflowStore } from '@/stores/workflowStore';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { NodeCategory, NodeDefinition } from '@/types/workflow';
+import type { NodeCategory, NodeDefinition, WorkflowNode, WorkflowNodeData } from '@/types/workflow';
 
 const categoryIcons: Record<string, LucideIcon> = {
   triggers: Zap,
@@ -254,15 +255,37 @@ interface NodeItemProps {
 }
 
 const NodeItem: FC<NodeItemProps> = ({ node, onDragStart }) => {
+  const { addNode } = useWorkflowStore();
+
+  const handleClick = () => {
+    // Add node at center of canvas when clicked
+    const newNode: WorkflowNode = {
+      id: `${node.type}-${Date.now()}`,
+      type: 'custom',
+      position: { x: 250 + Math.random() * 100, y: 150 + Math.random() * 100 },
+      data: {
+        label: node.label,
+        type: node.type,
+        category: node.category,
+        icon: node.icon,
+        color: node.color,
+        config: { ...node.defaultData },
+        isConfigured: false,
+      } as WorkflowNodeData,
+    };
+    addNode(newNode);
+  };
+
   return (
     <div
       draggable
+      onClick={handleClick}
       onDragStart={(e) => onDragStart(e, node.type)}
       className={cn(
-        'flex items-center gap-2 p-2 rounded-lg cursor-grab',
+        'flex items-center gap-2 p-2 rounded-lg cursor-pointer',
         'bg-background/50 border border-transparent',
         'hover:border-primary/50 hover:bg-background/80 hover:shadow-sm',
-        'active:cursor-grabbing active:scale-95',
+        'active:scale-95',
         'transition-all duration-150'
       )}
     >
@@ -343,8 +366,5 @@ const MobileNodeItem: FC<MobileNodeItemProps> = ({ node, onClose }) => {
     </button>
   );
 };
-
-// Import at component level
-import { useWorkflowStore } from '@/stores/workflowStore';
 
 export default NodeLibrary;
