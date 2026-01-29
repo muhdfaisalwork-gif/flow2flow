@@ -1,8 +1,9 @@
-import { type FC } from 'react';
+import { type FC, useRef } from 'react';
 import { 
   Save, Play, Undo, Redo, Settings, 
   PanelLeftClose, PanelLeft, Sparkles,
-  ChevronLeft, MoreVertical
+  ChevronLeft, MoreVertical, Download, Upload,
+  FileJson, Share2, Copy, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +14,17 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useUIStore } from '@/stores/uiStore';
 import { useWorkflowStore } from '@/stores/workflowStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { exportWorkflow, importWorkflow, downloadWorkflow, type ExportFormat } from '@/lib/workflow-io';
 
 interface EditorToolbarProps {
   onSave?: () => void;
@@ -26,8 +33,77 @@ interface EditorToolbarProps {
 
 const EditorToolbar: FC<EditorToolbarProps> = ({ onSave, onRun }) => {
   const { isNodeLibraryOpen, toggleNodeLibrary, toggleAIAssistant, toggleSettings } = useUIStore();
-  const { workflow, updateWorkflowMeta, isDirty } = useWorkflowStore();
+  const { workflow, nodes, edges, updateWorkflowMeta, isDirty, setWorkflow } = useWorkflowStore();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = (format: ExportFormat) => {
+    if (!workflow) return;
+    
+    const content = exportWorkflow(workflow, nodes, edges, format);
+    const formatLabel = format === 'json' ? 'Flow2Flow' : format;
+    const filename = `${workflow.name.replace(/\s+/g, '-').toLowerCase()}-${format}.json`;
+    
+    downloadWorkflow(content, filename);
+    
+    toast({
+      title: 'Workflow exported',
+      description: `Exported as ${formatLabel} format`,
+    });
+  };
+
+  const handleImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const imported = importWorkflow(text);
+      
+      setWorkflow({
+        id: crypto.randomUUID(),
+        name: imported.name,
+        description: imported.description,
+        nodes: imported.nodes,
+        edges: imported.edges,
+        settings: imported.settings,
+        isActive: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      toast({
+        title: 'Workflow imported',
+        description: `Imported "${imported.name}" from ${imported.sourceFormat} format`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Import failed',
+        description: error instanceof Error ? error.message : 'Could not parse the workflow file',
+      });
+    }
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!workflow) return;
+    
+    const content = exportWorkflow(workflow, nodes, edges, 'json');
+    await navigator.clipboard.writeText(content);
+    
+    toast({
+      title: 'Copied to clipboard',
+      description: 'Workflow JSON copied to clipboard',
+    });
+  };
 
   if (isMobile) {
     return (
@@ -149,6 +225,68 @@ const EditorToolbar: FC<EditorToolbarProps> = ({ onSave, onRun }) => {
 
       {/* Right section */}
       <div className="flex items-center gap-2">
+        {/* Hidden file input for import */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        {/* Import/Export Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <FileJson className="h-4 w-4" />
+              File
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Import</DropdownMenuLabel>
+            <DropdownMenuItem onClick={handleImport}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import from file...
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuLabel>Export</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => handleExport('json')}>
+              <Download className="h-4 w-4 mr-2" />
+              Export as Flow2Flow (.json)
+            </DropdownMenuItem>
+            
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Share2 className="h-4 w-4 mr-2" />
+                Export for other platforms
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handleExport('n8n')}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  n8n format
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('activepieces')}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Activepieces format
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('zapier')}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Zapier format
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem onClick={handleCopyToClipboard}>
+              <Copy className="h-4 w-4 mr-2" />
+              Copy to clipboard
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button
           variant="ghost"
           size="sm"
