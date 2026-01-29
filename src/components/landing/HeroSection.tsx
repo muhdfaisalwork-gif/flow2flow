@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { ArrowRight, Github, Play, Sparkles, Zap, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WorkflowAnimation } from "./WorkflowAnimation";
@@ -71,17 +72,21 @@ export function HeroSection() {
               transition={{ delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
-              <Button
-                size="lg"
-                className="gradient-primary text-white border-0 glow-primary gap-2 text-base px-8"
-              >
-                <Zap className="w-5 h-5" />
-                Start Building Free
-              </Button>
-              <Button variant="outline" size="lg" className="gap-2 text-base">
-                <Play className="w-5 h-5" />
-                Watch Demo
-              </Button>
+              <Link to="/dashboard">
+                <Button
+                  size="lg"
+                  className="gradient-primary text-white border-0 glow-primary gap-2 text-base px-8"
+                >
+                  <Zap className="w-5 h-5" />
+                  Start Building Free
+                </Button>
+              </Link>
+              <Link to="/workflow/new">
+                <Button variant="outline" size="lg" className="gap-2 text-base">
+                  <Play className="w-5 h-5" />
+                  Watch Demo
+                </Button>
+              </Link>
             </motion.div>
 
             {/* GitHub Badge */}
