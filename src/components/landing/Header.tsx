@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Menu, X, Github, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,9 +57,11 @@ export function Header() {
                 Star on GitHub
               </a>
             </Button>
-            <Button size="sm" className="gradient-primary text-white border-0 glow-primary">
-              Get Started Free
-            </Button>
+            <Link to="/dashboard">
+              <Button size="sm" className="gradient-primary text-white border-0 glow-primary">
+                Get Started Free
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
