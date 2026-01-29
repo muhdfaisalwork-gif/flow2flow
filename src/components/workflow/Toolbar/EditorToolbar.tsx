@@ -2,13 +2,21 @@ import { type FC } from 'react';
 import { 
   Save, Play, Undo, Redo, Settings, 
   PanelLeftClose, PanelLeft, Sparkles,
-  ChevronLeft
+  ChevronLeft, MoreVertical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useUIStore } from '@/stores/uiStore';
 import { useWorkflowStore } from '@/stores/workflowStore';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
 
 interface EditorToolbarProps {
@@ -19,6 +27,79 @@ interface EditorToolbarProps {
 const EditorToolbar: FC<EditorToolbarProps> = ({ onSave, onRun }) => {
   const { isNodeLibraryOpen, toggleNodeLibrary, toggleAIAssistant, toggleSettings } = useUIStore();
   const { workflow, updateWorkflowMeta, isDirty } = useWorkflowStore();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="h-14 border-b border-border/50 bg-card/50 backdrop-blur-sm flex items-center justify-between px-3">
+        {/* Left section - compact */}
+        <div className="flex items-center gap-2">
+          <Link to="/dashboard">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleNodeLibrary}
+            className="h-8 w-8"
+          >
+            {isNodeLibraryOpen ? (
+              <PanelLeftClose className="h-4 w-4" />
+            ) : (
+              <PanelLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Center - workflow name */}
+        <div className="flex-1 mx-2 min-w-0">
+          <Input
+            value={workflow?.name || 'Untitled Workflow'}
+            onChange={(e) => updateWorkflowMeta({ name: e.target.value })}
+            className="h-8 text-center bg-transparent border-none font-medium focus-visible:ring-1 text-sm"
+          />
+        </div>
+
+        {/* Right - mobile menu */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleAIAssistant}
+            className="h-8 w-8"
+          >
+            <Sparkles className="h-4 w-4" />
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onRun}>
+                <Play className="h-4 w-4 mr-2" />
+                Run Workflow
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onSave}>
+                <Save className="h-4 w-4 mr-2" />
+                Save {isDirty && '•'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={toggleSettings}>
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-14 border-b border-border/50 bg-card/50 backdrop-blur-sm flex items-center justify-between px-4">

@@ -14,7 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      workflow_runs: {
+        Row: {
+          created_at: string
+          error_log: string | null
+          finished_at: string | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          started_at: string
+          status: Database["public"]["Enums"]["workflow_run_status"]
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_log?: string | null
+          finished_at?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["workflow_run_status"]
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          error_log?: string | null
+          finished_at?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["workflow_run_status"]
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_templates: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          edges: Json
+          id: string
+          is_public: boolean
+          name: string
+          nodes: Json
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_public?: boolean
+          name: string
+          nodes?: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_public?: boolean
+          name?: string
+          nodes?: Json
+        }
+        Relationships: []
+      }
+      workflows: {
+        Row: {
+          created_at: string
+          description: string | null
+          edges: Json
+          id: string
+          is_active: boolean
+          name: string
+          nodes: Json
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          nodes?: Json
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          nodes?: Json
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +138,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      workflow_run_status: "pending" | "running" | "success" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +265,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      workflow_run_status: ["pending", "running", "success", "failed"],
+    },
   },
 } as const
