@@ -28,17 +28,22 @@ export function HeroSection() {
             transition={{ duration: 0.6 }}
             className="text-center lg:text-left"
           >
-            {/* Badge */}
-            <motion.div
+            {/* Open Source Badge */}
+            <motion.a
+              href="https://github.com/muhdfaisalwork-gif/flow2flow"
+              target="_blank"
+              rel="noopener noreferrer"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6 hover:bg-secondary/50 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-electric" />
-              <span className="text-sm font-medium">Now with AI-Powered Automation</span>
-              <ArrowRight className="w-4 h-4" />
-            </motion.div>
+              <Github className="w-4 h-4 text-electric" />
+              <span className="text-sm font-medium">Open Source</span>
+              <span className="px-2 py-0.5 rounded-full bg-electric/20 text-electric text-xs font-bold">
+                ⭐ Star
+              </span>
+            </motion.a>
 
             {/* Heading */}
             <motion.h1
@@ -97,16 +102,13 @@ export function HeroSection() {
               className="mt-8 flex items-center gap-4 justify-center lg:justify-start"
             >
               <a
-                href="https://github.com"
+                href="https://github.com/muhdfaisalwork-gif/flow2flow"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Github className="w-5 h-5" />
                 <span>Star us on GitHub</span>
-                <span className="px-2 py-0.5 rounded-full bg-secondary text-xs font-medium">
-                  12.5k ⭐
-                </span>
               </a>
             </motion.div>
           </motion.div>
