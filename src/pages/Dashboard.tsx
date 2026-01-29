@@ -1,4 +1,4 @@
-import { type FC } from 'react';
+import { type FC } from 'react'; // Dashboard v1
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
