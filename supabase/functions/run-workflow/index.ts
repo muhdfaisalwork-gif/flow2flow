@@ -112,12 +112,23 @@ serve(async (req) => {
     };
 
     try {
-      // Find start node (trigger nodes have no incoming edges)
-      const targetNodes = new Set(edges.map((e) => e.target));
-      const startNodes = nodes.filter((n) => !targetNodes.has(n.id));
+      if (nodes.length === 0) {
+        throw new Error("Workflow has no nodes");
+      }
 
+      // Find start nodes (nodes with no incoming edges or trigger nodes)
+      const targetNodes = new Set(edges.map((e) => e.target));
+      const triggerTypes = ["webhook-trigger", "schedule-trigger", "manual-trigger"];
+      
+      // Start with trigger nodes, or nodes with no incoming edges
+      let startNodes = nodes.filter((n) => triggerTypes.includes(n.data.type));
       if (startNodes.length === 0) {
-        throw new Error("No start node found");
+        startNodes = nodes.filter((n) => !targetNodes.has(n.id));
+      }
+
+      // If still no start nodes and we have nodes, just use all nodes
+      if (startNodes.length === 0 && nodes.length > 0) {
+        startNodes = nodes;
       }
 
       // Execute nodes in order
