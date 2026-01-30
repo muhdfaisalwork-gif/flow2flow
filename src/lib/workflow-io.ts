@@ -166,28 +166,51 @@ export function importWorkflow(jsonString: string): {
   settings: Workflow['settings'];
   sourceFormat: string;
 } {
-  const data = JSON.parse(jsonString);
+  let data: Record<string, unknown>;
+  
+  try {
+    data = JSON.parse(jsonString);
+  } catch (e) {
+    throw new Error('Invalid JSON format. Please check your file.');
+  }
   
   // Detect format
   if (data.version && data.format === 'json') {
     // Flow2Flow native format
     return {
-      ...data.workflow,
+      ...(data.workflow as ReturnType<typeof importWorkflow>),
       sourceFormat: 'Flow2Flow',
     };
   }
   
   if (data.connections && Array.isArray(data.nodes)) {
     // n8n format
-    return importFromN8n(data);
+    return importFromN8n(data as unknown as N8nWorkflow);
   }
   
-  if (data.trigger && data.actions) {
-    // Activepieces or Zapier-like format
-    return importFromGenericFormat(data);
+  if (data.trigger || data.actions) {
+    // Activepieces or Zapier-like format (trigger OR actions)
+    return importFromGenericFormat(data as { name?: string; trigger?: unknown; actions?: Array<{ name: string; type: string; config?: Record<string, unknown> }> });
   }
 
-  throw new Error('Unrecognized workflow format');
+  // Try to import as raw nodes/edges format
+  if (Array.isArray(data.nodes)) {
+    return {
+      name: (data.name as string) || 'Imported Workflow',
+      description: (data.description as string) || '',
+      nodes: data.nodes as WorkflowNode[],
+      edges: (data.edges as WorkflowEdge[]) || [],
+      settings: (data.settings as Workflow['settings']) || {
+        timezone: 'UTC',
+        retryOnFailure: true,
+        maxRetries: 3,
+        errorNotification: true,
+      },
+      sourceFormat: 'Generic JSON',
+    };
+  }
+
+  throw new Error('Unrecognized workflow format. Supported formats: Flow2Flow, n8n, Activepieces, Zapier, or any JSON with nodes array.');
 }
 
 function importFromN8n(n8nData: N8nWorkflow): ReturnType<typeof importWorkflow> {
