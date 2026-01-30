@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X, Zap, Github, Star } from "lucide-react";
+import { Menu, X, Github, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+import logo from "@/assets/logo.png";
 
 const navLinks = [
   { name: "Features", href: "#features" },
@@ -45,12 +46,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute inset-0 w-8 h-8 rounded-lg gradient-primary blur-lg opacity-50" />
-            </div>
+            <img src={logo} alt="Flow2Flow" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold gradient-text">Flow2Flow</span>
           </div>
 
