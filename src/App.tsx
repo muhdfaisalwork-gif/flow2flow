@@ -13,6 +13,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import WorkflowEditor from "./pages/WorkflowEditor";
 import SharedWorkflow from "./pages/SharedWorkflow";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,14 @@ const App = () => (
                 }
               />
               <Route path="/workflow/share/:token" element={<SharedWorkflow />} />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

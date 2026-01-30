@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Plus, Search, Play, MoreVertical, 
   Zap, Clock, CheckCircle,
-  LogOut, User, Loader2, Trash2
+  LogOut, User, Loader2, Trash2, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,6 +134,10 @@ const Dashboard: FC = () => {
                   {user?.email}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign out
