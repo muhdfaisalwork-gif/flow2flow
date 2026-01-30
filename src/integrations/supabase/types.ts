@@ -41,6 +41,81 @@ export type Database = {
         }
         Relationships: []
       }
+      tfa_pending_verifications: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          method: Database["public"]["Enums"]["tfa_method"]
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          method: Database["public"]["Enums"]["tfa_method"]
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          method?: Database["public"]["Enums"]["tfa_method"]
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_tfa_settings: {
+        Row: {
+          backup_codes: string[] | null
+          created_at: string
+          email_verified: boolean
+          enabled: boolean
+          id: string
+          phone_number: string | null
+          phone_verified: boolean
+          preferred_method: Database["public"]["Enums"]["tfa_method"] | null
+          totp_secret: string | null
+          totp_verified: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_codes?: string[] | null
+          created_at?: string
+          email_verified?: boolean
+          enabled?: boolean
+          id?: string
+          phone_number?: string | null
+          phone_verified?: boolean
+          preferred_method?: Database["public"]["Enums"]["tfa_method"] | null
+          totp_secret?: string | null
+          totp_verified?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_codes?: string[] | null
+          created_at?: string
+          email_verified?: boolean
+          enabled?: boolean
+          id?: string
+          phone_number?: string | null
+          phone_verified?: boolean
+          preferred_method?: Database["public"]["Enums"]["tfa_method"] | null
+          totp_secret?: string | null
+          totp_verified?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workflow_runs: {
         Row: {
           created_at: string
@@ -221,6 +296,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      tfa_method: "totp" | "email" | "sms"
       workflow_run_status: "pending" | "running" | "success" | "failed"
     }
     CompositeTypes: {
@@ -349,6 +425,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      tfa_method: ["totp", "email", "sms"],
       workflow_run_status: ["pending", "running", "success", "failed"],
     },
   },
