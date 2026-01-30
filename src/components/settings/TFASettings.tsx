@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Smartphone, Mail, MessageSquare, Check, X, Loader2, Copy, QrCode } from 'lucide-react';
+import { Shield, Smartphone, Mail, MessageSquare, Check, Loader2, Copy } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -188,11 +189,11 @@ export function TFASettings() {
         </CardHeader>
         <CardContent className="space-y-6">
           {settings?.enabled && (
-            <div className="flex items-center justify-between p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+            <div className="flex items-center justify-between p-4 bg-success/10 rounded-lg border border-success/20">
               <div className="flex items-center gap-3">
-                <Check className="w-5 h-5 text-green-500" />
+                <Check className="w-5 h-5 text-success" />
                 <div>
-                  <p className="font-medium text-green-700 dark:text-green-400">2FA is enabled</p>
+                  <p className="font-medium text-success">2FA is enabled</p>
                   <p className="text-sm text-muted-foreground">
                     Using {settings.preferred_method?.toUpperCase()} verification
                   </p>
@@ -329,9 +330,15 @@ export function TFASettings() {
             {setupMethod === 'totp' && totpSecret && (
               <>
                 <div className="flex flex-col items-center gap-4 p-4 bg-muted rounded-lg">
-                  <div className="flex items-center justify-center w-48 h-48 bg-white rounded-lg">
-                    <QrCode className="w-32 h-32 text-muted-foreground" />
-                    <span className="sr-only">QR Code for TOTP</span>
+                  <div className="flex items-center justify-center p-4 bg-white rounded-lg">
+                    {totpUri && (
+                      <QRCodeSVG 
+                        value={totpUri} 
+                        size={180}
+                        level="M"
+                        includeMargin={false}
+                      />
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
                     Scan with Google Authenticator, Authy, or similar app
