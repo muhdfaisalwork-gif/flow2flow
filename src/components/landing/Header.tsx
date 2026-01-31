@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X, Github, Star } from "lucide-react";
+import { Menu, X, Github, Star, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const navLinks = [
   { name: "Features", href: "#features" },
@@ -18,6 +27,7 @@ const navLinks = [
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<"google" | "apple" | null>(null);
+  const { user, signOut } = useAuth();
 
   const handleOAuthSignIn = async (provider: "google" | "apple") => {
     setIsLoading(provider);
@@ -34,6 +44,14 @@ export function Header() {
       setIsLoading(null);
     }
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+  };
+
+  const displayName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <motion.header
@@ -73,27 +91,55 @@ export function Header() {
                 Star on GitHub
               </a>
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleOAuthSignIn("google")}
-              disabled={isLoading !== null}
-            >
-              {isLoading === "google" ? "Signing in..." : "Google"}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleOAuthSignIn("apple")}
-              disabled={isLoading !== null}
-            >
-              {isLoading === "apple" ? "Signing in..." : "Apple"}
-            </Button>
-            <Link to="/dashboard">
-              <Button size="sm" className="gradient-primary text-white border-0 glow-primary">
-                Get Started Free
-              </Button>
-            </Link>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    </Avatar>
+                    <span className="max-w-[120px] truncate">{displayName}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleOAuthSignIn("google")}
+                  disabled={isLoading !== null}
+                >
+                  {isLoading === "google" ? "Signing in..." : "Google"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleOAuthSignIn("apple")}
+                  disabled={isLoading !== null}
+                >
+                  {isLoading === "apple" ? "Signing in..." : "Apple"}
+                </Button>
+                <Link to="/dashboard">
+                  <Button size="sm" className="gradient-primary text-white border-0 glow-primary">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -136,27 +182,52 @@ export function Header() {
                     Star on GitHub
                   </a>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="justify-center"
-                  onClick={() => handleOAuthSignIn("google")}
-                  disabled={isLoading !== null}
-                >
-                  {isLoading === "google" ? "Signing in..." : "Sign in with Google"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="justify-center"
-                  onClick={() => handleOAuthSignIn("apple")}
-                  disabled={isLoading !== null}
-                >
-                  {isLoading === "apple" ? "Signing in..." : "Sign in with Apple"}
-                </Button>
-                <Button size="sm" className="gradient-primary text-white border-0">
-                  Get Started Free
-                </Button>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-2 py-2 px-3 bg-muted rounded-md">
+                      <Avatar className="w-6 h-6">
+                        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium truncate">{displayName}</span>
+                    </div>
+                    <Button size="sm" className="gradient-primary text-white border-0" asChild>
+                      <Link to="/dashboard">Go to Dashboard</Link>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="justify-center text-destructive"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="justify-center"
+                      onClick={() => handleOAuthSignIn("google")}
+                      disabled={isLoading !== null}
+                    >
+                      {isLoading === "google" ? "Signing in..." : "Sign in with Google"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="justify-center"
+                      onClick={() => handleOAuthSignIn("apple")}
+                      disabled={isLoading !== null}
+                    >
+                      {isLoading === "apple" ? "Signing in..." : "Sign in with Apple"}
+                    </Button>
+                    <Button size="sm" className="gradient-primary text-white border-0" asChild>
+                      <Link to="/dashboard">Get Started Free</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
