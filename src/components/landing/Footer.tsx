@@ -1,4 +1,5 @@
-import { Zap, Github, Twitter, MessageCircle } from "lucide-react";
+import { Github, Twitter, MessageCircle } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const footerLinks = {
   Product: [
@@ -43,9 +44,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
+              <img src={logo} alt="Flow2Flow" className="w-8 h-8 object-contain" />
               <span className="text-xl font-bold gradient-text">Flow2Flow</span>
             </div>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
