@@ -75,8 +75,8 @@ serve(async (req: Request) => {
           `,
         });
       } else {
-        // For demo/development, log the code
-        console.log(`2FA code for ${user.email}: ${code}`);
+        // Email service not configured - code is stored in DB but not delivered
+        console.log(`2FA email code requested for user ${user.id} (email service not configured)`);
       }
 
       return new Response(
@@ -91,8 +91,8 @@ serve(async (req: Request) => {
       const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
 
       if (!twilioSid || !twilioToken || !twilioPhone) {
-        // For demo, just store the code - in production would need Twilio
-        console.log(`2FA SMS code for ${phone_number}: ${code}`);
+        // SMS service not configured - code is stored in DB but not delivered
+        console.log(`2FA SMS code requested for user ${user.id} (SMS service not configured)`);
         
         // Update phone number in settings
         if (phone_number) {
@@ -105,8 +105,7 @@ serve(async (req: Request) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: "SMS service not configured. Code logged for demo.",
-            demo_code: code 
+            message: "SMS service not configured. Please configure Twilio to send codes." 
           }),
           { headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
