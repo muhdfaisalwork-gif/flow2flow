@@ -290,7 +290,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_tfa_settings_safe: {
+        Row: {
+          created_at: string | null
+          email_verified: boolean | null
+          enabled: boolean | null
+          id: string | null
+          phone_verified: boolean | null
+          preferred_method: Database["public"]["Enums"]["tfa_method"] | null
+          totp_verified: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_verified?: boolean | null
+          enabled?: boolean | null
+          id?: string | null
+          phone_verified?: boolean | null
+          preferred_method?: Database["public"]["Enums"]["tfa_method"] | null
+          totp_verified?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_verified?: boolean | null
+          enabled?: boolean | null
+          id?: string | null
+          phone_verified?: boolean | null
+          preferred_method?: Database["public"]["Enums"]["tfa_method"] | null
+          totp_verified?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
