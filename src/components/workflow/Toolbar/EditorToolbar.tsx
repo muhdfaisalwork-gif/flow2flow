@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUIStore } from '@/stores/uiStore';
 import { useWorkflowStore } from '@/stores/workflowStore';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +46,7 @@ const EditorToolbar: FC<EditorToolbarProps> = ({
 }) => {
   const { isNodeLibraryOpen, toggleNodeLibrary, toggleAIAssistant, toggleSettings } = useUIStore();
   const { workflow, nodes, edges, updateWorkflowMeta, isDirty, setWorkflow } = useWorkflowStore();
+  const { handleUndo, handleRedo, canUndo, canRedo } = useUndoRedo();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -226,10 +228,24 @@ const EditorToolbar: FC<EditorToolbarProps> = ({
 
       {/* Center section - History controls */}
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          disabled={!canUndo}
+          onClick={handleUndo}
+          title="Undo (Ctrl+Z)"
+        >
           <Undo className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          disabled={!canRedo}
+          onClick={handleRedo}
+          title="Redo (Ctrl+Shift+Z)"
+        >
           <Redo className="h-4 w-4" />
         </Button>
       </div>

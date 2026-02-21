@@ -1,4 +1,4 @@
-import { type FC, useState } from 'react';
+import { type FC, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Sparkles, Loader2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,29 +26,45 @@ interface AIAssistantProps {
   isOpen: boolean;
 }
 
+const SUGGESTIONS = [
+  "Build a workflow that monitors a webhook and sends data to an API",
+  "Create an email automation that summarizes content with AI",
+  "Make a data pipeline that fetches, transforms, and stores data",
+  "Build a chatbot workflow with AI responses",
+];
+
 const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm your AI workflow assistant. I can help you:\n\n• **Build workflows** from natural language\n• **Explain** what nodes do\n• **Debug** issues in your workflow\n• **Suggest** optimizations\n\nWhat would you like to create?",
+      content: "Hi! I'm your AI workflow assistant. I can help you:\n\n• **Build workflows** from natural language — just describe what you need\n• **Explain** what nodes do\n• **Debug** issues in your workflow\n• **Suggest** optimizations\n\nTry clicking a suggestion below or describe your workflow!",
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   const isMobile = useIsMobile();
   const { toggleAIAssistant } = useUIStore();
-  const { setNodes, setEdges, nodes, edges } = useWorkflowStore();
+  const { setNodes, setEdges, nodes, edges, updateWorkflowMeta } = useWorkflowStore();
   const { toast } = useToast();
 
-  const handleSend = async (generateWorkflow = false) => {
-    if (!input.trim() || isLoading) return;
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  const handleSend = async (generateWorkflow = false, overrideInput?: string) => {
+    const messageText = overrideInput || input.trim();
+    if (!messageText || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: messageText,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -56,34 +72,54 @@ const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
     setIsLoading(true);
 
     try {
+      // Build conversation history (exclude system messages)
+      const history = messages
+        .filter(m => m.id !== '1') // exclude initial greeting
+        .map(m => ({ role: m.role, content: m.content }));
+
       const { data, error } = await supabase.functions.invoke('workflow-ai', {
         body: {
-          message: userMessage.content,
+          message: messageText,
           type: generateWorkflow ? 'generate' : 'chat',
+          history,
           context: {
             workflow: { nodes, edges },
           },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check for rate limit or payment errors
+        if (error.message?.includes('429')) {
+          throw new Error('Rate limited — please wait a moment and try again.');
+        }
+        if (error.message?.includes('402')) {
+          throw new Error('AI credits depleted. Please add credits in Settings → Workspace → Usage.');
+        }
+        throw error;
+      }
 
       if (data.type === 'workflow' && data.workflow) {
         // Apply generated workflow to canvas
         setNodes(data.workflow.nodes);
         setEdges(data.workflow.edges);
+
+        // Update workflow name if provided
+        if (data.name) {
+          updateWorkflowMeta({ name: data.name });
+        }
         
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.explanation || "I've created a workflow for you! Check the canvas to see the nodes I've added. Click on any node to configure it.",
+          content: data.explanation || "I've created a workflow for you! Check the canvas to see the nodes I've added.",
           workflow: data.workflow,
         };
         setMessages((prev) => [...prev, assistantMessage]);
         
         toast({
-          title: 'Workflow generated!',
-          description: 'Check the canvas to see your new workflow.',
+          title: '✨ Workflow generated!',
+          description: data.name ? `"${data.name}" is ready on the canvas.` : 'Check the canvas to see your new workflow.',
         });
       } else {
         const assistantMessage: Message = {
@@ -95,10 +131,11 @@ const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
       }
     } catch (error) {
       console.error('AI Assistant error:', error);
+      const errorMsg = error instanceof Error ? error.message : "I'm having trouble connecting right now. Please try again.";
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I'm having trouble connecting right now. Please try again in a moment.",
+        content: errorMsg,
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } finally {
@@ -112,6 +149,13 @@ const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
       handleSend(false);
     }
   };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setInput(suggestion);
+    handleSend(true, suggestion);
+  };
+
+  const showSuggestions = messages.length <= 1 && !isLoading;
 
   const panelContent = (
     <>
@@ -132,7 +176,7 @@ const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -161,10 +205,28 @@ const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
               </div>
             </div>
           ))}
+
+          {/* Suggestions */}
+          {showSuggestions && (
+            <div className="space-y-2 pt-2">
+              <p className="text-xs text-muted-foreground font-medium">Try one of these:</p>
+              {SUGGESTIONS.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="w-full text-left text-xs px-3 py-2 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-colors"
+                >
+                  ✨ {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
+              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Thinking...</span>
               </div>
             </div>
           )}
@@ -188,7 +250,7 @@ const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
               className="h-8 w-8"
               onClick={() => handleSend(true)}
               disabled={!input.trim() || isLoading}
-              title="Generate workflow"
+              title="Generate workflow from description"
             >
               <Wand2 className="w-4 h-4" />
             </Button>
@@ -237,7 +299,7 @@ const AIAssistant: FC<AIAssistantProps> = ({ isOpen }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-4 right-4 w-96 h-[500px] rounded-2xl border border-border/50 bg-card/95 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden z-50"
+          className="fixed bottom-4 right-4 w-96 h-[550px] rounded-2xl border border-border/50 bg-card/95 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden z-50"
         >
           {panelContent}
         </motion.div>
