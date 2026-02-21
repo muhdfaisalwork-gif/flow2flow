@@ -8,54 +8,44 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `You are Flow2Flow AI, an expert workflow automation assistant. You help users create, understand, and optimize automation workflows.
 
-Available node types:
-TRIGGERS (start workflows):
-- webhook: Receive HTTP requests with custom payloads
-- schedule: Run on a cron schedule (e.g., "0 9 * * *" for 9 AM daily)
-- manual: Manually triggered workflows
+Available node types with their exact type identifiers:
 
-ACTIONS (perform tasks):
-- http: Make HTTP requests to any API
-- code: Execute JavaScript code for custom logic
-- transform: Map, filter, or format data
+TRIGGERS (category: "triggers", color: "hsl(var(--electric))"):
+- type: "webhook-trigger", label: "Webhook" — Receive HTTP requests. Config: { method: "POST", path: "/webhook", headers: {} }
+- type: "schedule-trigger", label: "Schedule" — Cron-based. Config: { cron: "0 * * * *", timezone: "UTC" }
+- type: "manual-trigger", label: "Manual" — On demand. Config: {}
 
-LOGIC (control flow):
-- if-else: Conditional branching based on conditions
-- switch: Multiple condition branches
-- loop: Iterate over arrays
-- merge: Combine multiple data streams
+ACTIONS (category: "actions", color: "hsl(var(--neon))"):
+- type: "http-request", label: "HTTP Request" — Call any API. Config: { method: "GET", url: "", headers: {}, body: "" }
+- type: "code-node", label: "Code" — JavaScript. Config: { code: "return input;", language: "javascript" }
+- type: "data-transform", label: "Transform" — Map/filter. Config: { operation: "map", expression: "" }
 
-AI (powered by AI models):
-- ai-chat: Send prompts to AI models
-- ai-extract: Parse unstructured data into structured format
-- ai-summarize: Condense long content
+LOGIC (category: "logic", color: "hsl(var(--cyber))"):
+- type: "if-else", label: "If/Else" — Branch. Config: { condition: "", operator: "equals", value: "" }
+- type: "switch", label: "Switch" — Multiple branches. Config: { cases: [], defaultOutput: 0 }
+- type: "loop", label: "Loop" — Iterate arrays. Config: { arrayPath: "", batchSize: 1 }
+- type: "merge", label: "Merge" — Combine streams. Config: { mode: "append" }
 
-When generating workflows, respond with valid JSON in this format:
-{
-  "nodes": [
-    {
-      "id": "unique-id",
-      "type": "custom",
-      "position": { "x": number, "y": number },
-      "data": {
-        "label": "Node Name",
-        "type": "node-type",
-        "category": "triggers|actions|logic|ai",
-        "config": { ...node-specific config }
-      }
-    }
-  ],
-  "edges": [
-    {
-      "id": "edge-id",
-      "source": "source-node-id",
-      "target": "target-node-id",
-      "type": "custom"
-    }
-  ]
-}
+AI (category: "ai", color: "hsl(var(--glow))"):
+- type: "ai-chat", label: "AI Chat" — Prompts to LLMs. Config: { model: "google/gemini-2.5-flash", systemPrompt: "", userPrompt: "", temperature: 0.7 }
+- type: "ai-extract", label: "AI Extract" — Parse data. Config: { schema: {}, instructions: "" }
+- type: "ai-summarize", label: "AI Summarize" — Condense content. Config: { maxLength: 200, style: "concise" }
 
-Position nodes in a readable left-to-right flow with ~250px horizontal spacing and ~150px vertical spacing for branches.`;
+ICON MAPPING (use these exact icon names):
+- webhook-trigger: "Webhook", schedule-trigger: "Clock", manual-trigger: "Play"
+- http-request: "Globe", code-node: "Code", data-transform: "Shuffle"
+- if-else: "GitBranch", switch: "ArrowRightLeft", loop: "Repeat", merge: "Merge"
+- ai-chat: "MessageSquare", ai-extract: "FileSearch", ai-summarize: "FileText"
+
+When generating workflows:
+1. Every workflow must start with exactly one trigger node
+2. Position nodes in a readable left-to-right flow: trigger at x=100, then x=350, x=600, etc. Use y=200 as center, branch at y=100 and y=300
+3. Set isConfigured=true if you provide meaningful config values, false otherwise
+4. Use descriptive labels (e.g. "Fetch User Data" instead of just "HTTP Request")
+5. Connect all nodes logically with edges
+6. For if-else branches, create two output paths
+
+Be creative and practical. Suggest real use cases and fill in realistic config values where possible.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -87,7 +77,7 @@ serve(async (req) => {
       );
     }
 
-    const { message, context, type = "chat" } = await req.json();
+    const { message, context, type = "chat", history = [] } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -98,15 +88,25 @@ serve(async (req) => {
       { role: "system", content: SYSTEM_PROMPT },
     ];
 
-    if (context?.workflow) {
+    // Add workflow context if available
+    if (context?.workflow && (context.workflow.nodes?.length > 0 || context.workflow.edges?.length > 0)) {
       messages.push({
         role: "user",
-        content: `Current workflow context:\n${JSON.stringify(context.workflow, null, 2)}`,
+        content: `Current workflow has ${context.workflow.nodes?.length || 0} nodes and ${context.workflow.edges?.length || 0} edges. Here's the current state:\n${JSON.stringify(context.workflow, null, 2)}`,
       });
       messages.push({
         role: "assistant",
-        content: "I understand the current workflow. How can I help you modify or improve it?",
+        content: "I can see your current workflow. I can help modify, extend, or optimize it. What would you like to do?",
       });
+    }
+
+    // Add conversation history for chat continuity
+    if (Array.isArray(history) && history.length > 0) {
+      for (const msg of history.slice(-10)) { // Last 10 messages for context
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          messages.push({ role: msg.role, content: msg.content });
+        }
+      }
     }
 
     messages.push({ role: "user", content: message });
@@ -122,7 +122,7 @@ serve(async (req) => {
           type: "function",
           function: {
             name: "generate_workflow",
-            description: "Generate a workflow with nodes and edges based on user description",
+            description: "Generate a complete workflow with properly configured nodes and edges based on the user's natural language description. Each node must use exact type identifiers from the available node types.",
             parameters: {
               type: "object",
               properties: {
@@ -131,8 +131,8 @@ serve(async (req) => {
                   items: {
                     type: "object",
                     properties: {
-                      id: { type: "string" },
-                      type: { type: "string", enum: ["custom"] },
+                      id: { type: "string", description: "Unique ID like 'webhook-trigger-1' or 'http-request-1'" },
+                      type: { type: "string", enum: ["custom"], description: "Always 'custom'" },
                       position: {
                         type: "object",
                         properties: {
@@ -144,12 +144,15 @@ serve(async (req) => {
                       data: {
                         type: "object",
                         properties: {
-                          label: { type: "string" },
-                          type: { type: "string" },
+                          label: { type: "string", description: "Descriptive label for the node" },
+                          type: { type: "string", description: "One of the exact node type identifiers" },
                           category: { type: "string", enum: ["triggers", "actions", "logic", "ai"] },
-                          config: { type: "object" },
+                          icon: { type: "string", description: "Icon name from the mapping" },
+                          color: { type: "string", description: "CSS color value using hsl(var(--electric/neon/cyber/glow))" },
+                          config: { type: "object", description: "Node-specific configuration" },
+                          isConfigured: { type: "boolean", description: "Whether meaningful config values are provided" },
                         },
-                        required: ["label", "type", "category"],
+                        required: ["label", "type", "category", "icon", "color", "config", "isConfigured"],
                       },
                     },
                     required: ["id", "type", "position", "data"],
@@ -164,13 +167,15 @@ serve(async (req) => {
                       source: { type: "string" },
                       target: { type: "string" },
                       type: { type: "string", enum: ["custom"] },
+                      animated: { type: "boolean" },
                     },
                     required: ["id", "source", "target", "type"],
                   },
                 },
-                explanation: { type: "string", description: "Brief explanation of the workflow" },
+                explanation: { type: "string", description: "Clear explanation of what the workflow does, step by step" },
+                name: { type: "string", description: "Suggested workflow name" },
               },
-              required: ["nodes", "edges", "explanation"],
+              required: ["nodes", "edges", "explanation", "name"],
             },
           },
         },
@@ -220,6 +225,7 @@ serve(async (req) => {
           edges: args.edges,
         },
         explanation: args.explanation,
+        name: args.name,
       };
     } else {
       result = {

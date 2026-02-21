@@ -21,6 +21,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import RunHistory from '@/components/dashboard/RunHistory';
 
 interface WorkflowFromDB {
   id: string;
@@ -290,6 +291,11 @@ const Dashboard: FC = () => {
             ))}
           </div>
         )}
+
+        {/* Run History Section */}
+        <div className="mt-8">
+          <RunHistory />
+        </div>
       </main>
     </div>
   );
