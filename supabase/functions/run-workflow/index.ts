@@ -291,11 +291,37 @@ async function executeHttpRequest(config: Record<string, unknown>): Promise<unkn
   }
 }
 
+// Blocked patterns that could access sensitive runtime APIs
+const BLOCKED_PATTERNS = [
+  /\bDeno\b/i,
+  /\bprocess\b/,
+  /\bimport\b/,
+  /\brequire\b/,
+  /\bfetch\b/,
+  /\bglobalThis\b/,
+  /\beval\b/,
+  /\bFunction\b/,
+  /\b__proto__\b/,
+  /\bconstructor\b\s*\[/,
+];
+
+function validateUserCode(code: string): void {
+  for (const pattern of BLOCKED_PATTERNS) {
+    if (pattern.test(code)) {
+      throw new Error(`Code contains blocked pattern: ${pattern.source}`);
+    }
+  }
+  if (code.length > 10000) {
+    throw new Error("Code exceeds maximum allowed length (10000 chars)");
+  }
+}
+
 async function executeCode(config: Record<string, unknown>, context: ExecutionContext): Promise<unknown> {
   const code = config.code as string;
   if (!code) return context.input;
 
-  // Simple code execution (sandboxed)
+  validateUserCode(code);
+
   try {
     const fn = new Function("input", "outputs", code);
     return fn(context.input, context.outputs);
@@ -307,6 +333,8 @@ async function executeCode(config: Record<string, unknown>, context: ExecutionCo
 async function executeTransform(config: Record<string, unknown>, context: ExecutionContext): Promise<unknown> {
   const expression = config.expression as string;
   if (!expression) return context.input;
+
+  validateUserCode(expression);
 
   try {
     const fn = new Function("input", "outputs", `return ${expression}`);
@@ -322,6 +350,8 @@ async function executeIfElse(config: Record<string, unknown>, context: Execution
   const value = config.value as string;
 
   if (!condition) return { branch: "else", input: context.input };
+
+  validateUserCode(condition);
 
   try {
     const fn = new Function("input", "outputs", `return ${condition}`);

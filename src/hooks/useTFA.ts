@@ -15,8 +15,9 @@ export function useTFA() {
       return;
     }
 
+    // Use the safe view to avoid exposing sensitive fields (totp_secret, backup_codes, phone_number)
     const { data, error } = await supabase
-      .from('user_tfa_settings')
+      .from('user_tfa_settings_safe' as any)
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
@@ -26,7 +27,7 @@ export function useTFA() {
     }
 
     // Cast the data to TFASettings since Supabase types may not be updated yet
-    setSettings(data as TFASettings | null);
+    setSettings(data as unknown as TFASettings | null);
     setIsLoading(false);
   }, [user]);
 

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,6 +63,30 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: authError } = await supabase.auth.getClaims(token);
+    if (authError || !claims?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { message, context, type = "chat" } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -73,7 +98,6 @@ serve(async (req) => {
       { role: "system", content: SYSTEM_PROMPT },
     ];
 
-    // Add context about current workflow if provided
     if (context?.workflow) {
       messages.push({
         role: "user",
@@ -87,7 +111,6 @@ serve(async (req) => {
 
     messages.push({ role: "user", content: message });
 
-    // For workflow generation, use tool calling for structured output
     const body: Record<string, unknown> = {
       model: "google/gemini-3-flash-preview",
       messages,
@@ -188,7 +211,6 @@ serve(async (req) => {
     let result: Record<string, unknown>;
 
     if (type === "generate" && choice?.message?.tool_calls?.[0]) {
-      // Extract structured workflow from tool call
       const toolCall = choice.message.tool_calls[0];
       const args = JSON.parse(toolCall.function.arguments);
       result = {
@@ -200,7 +222,6 @@ serve(async (req) => {
         explanation: args.explanation,
       };
     } else {
-      // Regular chat response
       result = {
         type: "message",
         content: choice?.message?.content || "I'm sorry, I couldn't process that request.",
