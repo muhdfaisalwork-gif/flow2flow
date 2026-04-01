@@ -38,7 +38,7 @@ export function useTFA() {
   const initializeTFA = async () => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    const { data, error } = await supabase
+    const { data: upsertData, error: upsertError } = await supabase
       .from('user_tfa_settings')
       .upsert({
         user_id: user.id,
@@ -47,8 +47,17 @@ export function useTFA() {
       .select()
       .single();
 
+    if (upsertError) return { data: null, error: upsertError };
+
+    // Re-fetch from safe view to avoid exposing secrets
+    const { data, error } = await supabase
+      .from('user_tfa_settings_safe' as any)
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
     if (!error && data) {
-      setSettings(data as TFASettings);
+      setSettings(data as unknown as TFASettings);
     }
 
     return { data, error };
@@ -57,15 +66,22 @@ export function useTFA() {
   const updateSettings = async (updates: Partial<TFASettings>) => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    const { data, error } = await supabase
+    const { error: updateError } = await supabase
       .from('user_tfa_settings')
       .update(updates)
+      .eq('user_id', user.id);
+
+    if (updateError) return { data: null, error: updateError };
+
+    // Re-fetch from safe view
+    const { data, error } = await supabase
+      .from('user_tfa_settings_safe' as any)
+      .select('*')
       .eq('user_id', user.id)
-      .select()
       .single();
 
     if (!error && data) {
-      setSettings(data as TFASettings);
+      setSettings(data as unknown as TFASettings);
     }
 
     return { data, error };

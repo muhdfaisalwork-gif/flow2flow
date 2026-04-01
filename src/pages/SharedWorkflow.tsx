@@ -40,6 +40,7 @@ const SharedWorkflow: FC = () => {
     setIsLoading(true);
     setError(null);
 
+    // Pass share token as header for RLS policy matching
     const { data, error } = await supabase
       .from('workflows')
       .select('id, name, description, nodes, edges, created_at, updated_at')
