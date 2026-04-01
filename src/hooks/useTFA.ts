@@ -66,11 +66,18 @@ export function useTFA() {
   const updateSettings = async (updates: Partial<TFASettings>) => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    const { data, error } = await supabase
+    const { error: updateError } = await supabase
       .from('user_tfa_settings')
       .update(updates)
+      .eq('user_id', user.id);
+
+    if (updateError) return { data: null, error: updateError };
+
+    // Re-fetch from safe view
+    const { data, error } = await supabase
+      .from('user_tfa_settings_safe' as any)
+      .select('*')
       .eq('user_id', user.id)
-      .select()
       .single();
 
     if (!error && data) {
