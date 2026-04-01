@@ -38,13 +38,22 @@ export function useTFA() {
   const initializeTFA = async () => {
     if (!user) return { error: new Error('Not authenticated') };
 
-    const { data, error } = await supabase
+    const { data: upsertData, error: upsertError } = await supabase
       .from('user_tfa_settings')
       .upsert({
         user_id: user.id,
         enabled: false,
       }, { onConflict: 'user_id' })
       .select()
+      .single();
+
+    if (upsertError) return { data: null, error: upsertError };
+
+    // Re-fetch from safe view to avoid exposing secrets
+    const { data, error } = await supabase
+      .from('user_tfa_settings_safe' as any)
+      .select('*')
+      .eq('user_id', user.id)
       .single();
 
     if (!error && data) {
