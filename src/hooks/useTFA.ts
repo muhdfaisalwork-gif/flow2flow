@@ -57,7 +57,7 @@ export function useTFA() {
       .single();
 
     if (!error && data) {
-      setSettings(data as TFASettings);
+      setSettings(data as unknown as TFASettings);
     }
 
     return { data, error };
