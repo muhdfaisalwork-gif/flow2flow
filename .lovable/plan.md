@@ -1,264 +1,150 @@
 
 
-# FlowForge - Phase 2 & 3 Implementation Plan
+# Comprehensive SaaS Hardening & Feature Parity Plan
 
-Building on the solid foundation from Phase 1, this plan covers the core functionality that makes FlowForge a true workflow automation platform.
+## Current State Assessment
 
----
+After a thorough audit of the entire codebase, here is where Flow2Flow stands relative to SaaS best practices and n8n feature parity:
 
-## Phase 2: Visual Workflow Builder
+### What's Working Well
+- Authentication (Google OAuth + email/password)
+- Protected routes with session management
+- RLS on all tables
+- Visual workflow editor with drag-and-drop
+- AI-powered workflow generation
+- Undo/redo with keyboard shortcuts
+- Version history, sharing, import/export
+- Edge function execution engine with code sandboxing
+- TFA settings page
 
-### 2.1 Core Dependencies
-Add `@xyflow/react` (React Flow v12) for the node-based canvas - it's the industry standard used by n8n, BuildShip, and similar tools.
-
-### 2.2 New Pages & Routes
-
-| Route | Component | Purpose |
-|-------|-----------|---------|
-| `/dashboard` | `Dashboard.tsx` | Workflow list, stats, quick actions |
-| `/workflows` | `Workflows.tsx` | Full workflow management page |
-| `/workflow/:id` | `WorkflowEditor.tsx` | The main canvas builder |
-| `/workflow/new` | `WorkflowEditor.tsx` | Create new workflow |
-
-### 2.3 Workflow Editor Architecture
+### Critical Gaps vs SaaS Standards & n8n
 
 ```text
-WorkflowEditor/
-├── WorkflowEditor.tsx          # Main container
-├── Canvas/
-│   ├── FlowCanvas.tsx          # React Flow wrapper
-│   ├── CustomNode.tsx          # Base node component
-│   ├── CustomEdge.tsx          # Animated connection lines
-│   └── MiniMap.tsx             # Navigation minimap
-├── Sidebar/
-│   ├── NodeLibrary.tsx         # Draggable node palette
-│   ├── NodeCategory.tsx        # Grouped nodes (Triggers, Actions, Logic, AI)
-│   └── SearchNodes.tsx         # Quick search
-├── Panel/
-│   ├── NodeConfigPanel.tsx     # Right-side configuration
-│   ├── InputOutput.tsx         # Data schema preview
-│   └── TestRunner.tsx          # Test node with sample data
-└── Toolbar/
-    ├── EditorToolbar.tsx       # Top toolbar
-    ├── UndoRedo.tsx            # History controls
-    └── ZoomControls.tsx        # Zoom in/out/fit
+Category              Status    Impact
+--------------------  --------  ------
+Rate limiting         MISSING   High - no abuse protection on edge functions
+Input validation      MISSING   High - no Zod validation on edge function inputs
+Error boundaries      MISSING   Medium - app crashes on uncaught errors
+Pagination            MISSING   Medium - dashboard hits 1000-row Supabase limit
+Missing node types    PARTIAL   High - only 13 nodes vs n8n's 400+
+                                (no Email, Slack, Google Sheets, DB, Wait, etc.)
+Webhook endpoints     MISSING   High - webhook trigger has no real endpoint
+Schedule execution    MISSING   High - cron triggers don't actually schedule
+Credential vault      MISSING   High - no way to store API keys per workflow
+Execution retry       MISSING   Medium - settings exist but not implemented
+Real-time exec view   MISSING   Medium - claimed but not implemented
+Node testing          MISSING   Medium - "Run Test" button does nothing
+Password reset        MISSING   Medium - no forgot password flow
+Usage/billing page    MISSING   Low - no usage tracking
+Onboarding/tour       MISSING   Low - no first-time user guidance
 ```
 
-### 2.4 Node Types (Initial Set)
+## Plan
 
-**Triggers (Start a workflow)**
-- `WebhookTrigger` - Receive HTTP requests
-- `ScheduleTrigger` - Cron-based timing
-- `ManualTrigger` - Run on demand
+### Phase 1: Security & Input Validation (Critical)
 
-**Actions (Do something)**
-- `HttpRequest` - Call any API
-- `CodeNode` - Execute JavaScript
-- `DataTransform` - Map, filter, format data
+**1.1 Edge Function Input Validation**
+- Add Zod schemas to `run-workflow` and `workflow-ai` edge functions
+- Validate `workflowId` as UUID, `message` as string with max length, `type` as enum
+- Return 400 with structured errors on validation failure
 
-**Logic (Control flow)**
-- `IfElse` - Conditional branching
-- `Switch` - Multiple conditions
-- `Loop` - Iterate over arrays
-- `Merge` - Combine data streams
+**1.2 Rate Limiting Headers**
+- Add rate limit response handling in the client for all edge function calls
+- Display user-friendly messages when rate limited
 
-**AI (Powered by Lovable AI)**
-- `AIChat` - Send prompts to LLMs
-- `AIExtract` - Parse unstructured data
-- `AISummarize` - Condense content
+**1.3 React Error Boundary**
+- Add a global `ErrorBoundary` component wrapping the app
+- Add a workflow-editor-specific error boundary to prevent canvas crashes from losing work
 
-### 2.5 State Management with Zustand
+**1.4 Password Reset Flow**
+- Add "Forgot password?" link on Login page
+- Create a `/reset-password` page using `supabase.auth.resetPasswordForEmail()`
+- Handle the recovery redirect with `supabase.auth.updateUser()`
 
-```text
-stores/
-├── workflowStore.ts    # Nodes, edges, workflow metadata
-├── uiStore.ts          # Selected node, panel visibility, zoom
-└── historyStore.ts     # Undo/redo stack
-```
+### Phase 2: Execution Engine Hardening (High Priority)
 
-### 2.6 Key UI/UX Features
+**2.1 Fix Node Test Button**
+- Wire up the "Run Test" button in `NodeConfigPanel` to actually execute a single node via a new `test-node` edge function
+- Display real output in the test panel
 
-- **Drag & drop nodes** from sidebar to canvas
-- **Connection validation** - prevent invalid connections
-- **Animated edges** showing data flow direction
-- **Mini-map** for navigation in large workflows
-- **Command palette** (Cmd+K) for quick actions
-- **Keyboard shortcuts** for power users
-- **Auto-layout** for messy workflows
+**2.2 Implement Execution Retry Logic**
+- Honor `maxRetries` and `retryOnFailure` settings in `run-workflow`
+- Add exponential backoff between retries
+- Log each retry attempt in `error_log`
 
----
+**2.3 Add Missing Core Node Handlers**
+- Add execution handlers for `data-transform` (currently mapped to `transform`), `switch`, `loop`, `merge`, `ai-extract`, `ai-summarize`
+- These exist as UI nodes but have no execution logic
 
-## Phase 3: AI-Powered Features
+### Phase 3: Feature Parity Improvements
 
-### 3.1 AI Assistant (Chat Interface)
+**3.1 Expand Node Library**
+Add 8 high-value node types that cover the most common automation use cases (lead gen, content creation, AI assistant, etc.):
+- **Email Send** (via edge function + external SMTP/API)
+- **Delay/Wait** (pause execution for N seconds)
+- **Set Variable** (assign values for downstream use)
+- **Respond to Webhook** (return data to webhook caller)
+- **Google Sheets** (read/write rows)
+- **Slack Message** (send messages to channels)
+- **Database Query** (query the project's own database)
+- **Filter** (pass/reject items based on conditions)
 
-A floating chat panel that helps users build workflows:
+Each new node type needs: definition in `definitions.ts`, config UI in `NodeConfigPanel`, and execution handler in `run-workflow`.
 
-```text
-components/ai/
-├── AIAssistant.tsx        # Main floating panel
-├── AIChatMessages.tsx     # Message history
-├── AIInput.tsx            # User input with suggestions
-└── WorkflowSuggestion.tsx # AI-generated workflow preview
-```
+**3.2 Credential Vault**
+- Create a `user_credentials` table (encrypted_value stored server-side only)
+- Add a "Credentials" section in Settings to manage API keys for integrations
+- Reference credentials by ID in node configs instead of raw values
 
-**Capabilities:**
-- "Create a workflow that..." → AI generates nodes + connections
-- "What does this node do?" → Context-aware help
-- "Fix this error" → Debug assistance
-- "Optimize this workflow" → Suggestions
+**3.3 Dashboard Pagination**
+- Add pagination to workflow listing (currently unbounded)
+- Add pagination to RunHistory component
 
-### 3.2 Backend: AI Edge Function
+### Phase 4: UX Polish
 
-Create `supabase/functions/workflow-ai/index.ts`:
-- Uses Lovable AI gateway
-- System prompt trained on FlowForge concepts
-- Tool calling for structured workflow generation
+**4.1 Real-time Execution View**
+- Use Supabase Realtime to subscribe to `workflow_runs` status changes
+- Highlight nodes on the canvas as they execute (green = success, red = failed)
 
-### 3.3 AI Node Configuration
+**4.2 Onboarding Flow**
+- Show a first-time tooltip tour when user creates their first workflow
+- Pre-populate template gallery with 5-6 starter templates for common use cases
 
-AI nodes get special config panels with:
-- Prompt template editor with variables
-- Model selection (Gemini, GPT-5)
-- Temperature/creativity slider
-- Output format (text, JSON, etc.)
+**4.3 Usage Dashboard**
+- Add a simple usage card on Settings page showing workflow run count this month
 
-### 3.4 Smart Features
+## Technical Details
 
-- **Auto-suggestions**: When you add a node, AI suggests the next logical step
-- **Error detection**: AI analyzes workflow and warns about potential issues
-- **Natural language to workflow**: Describe what you want, AI builds it
+**Database migrations needed:**
+- `user_credentials` table with RLS (user can only access own credentials)
+- Add `retry_count` column to `workflow_runs`
 
----
+**Edge functions to create/modify:**
+- `test-node` - new function for single-node testing
+- `run-workflow` - add retry logic, missing node handlers, credential resolution
 
-## Database Schema (Lovable Cloud)
+**Files to create:**
+- `src/components/auth/ResetPassword.tsx`
+- `src/components/ErrorBoundary.tsx`
+- `src/pages/ResetPassword.tsx`
 
-```text
-Tables:
-├── workflows
-│   ├── id (uuid, pk)
-│   ├── user_id (uuid, fk to auth.users)
-│   ├── name (text)
-│   ├── description (text)
-│   ├── nodes (jsonb)
-│   ├── edges (jsonb)
-│   ├── settings (jsonb)
-│   ├── is_active (boolean)
-│   ├── created_at (timestamp)
-│   └── updated_at (timestamp)
-│
-├── workflow_runs
-│   ├── id (uuid, pk)
-│   ├── workflow_id (uuid, fk)
-│   ├── status (enum: pending, running, success, failed)
-│   ├── started_at (timestamp)
-│   ├── finished_at (timestamp)
-│   ├── input_data (jsonb)
-│   ├── output_data (jsonb)
-│   └── error_log (text)
-│
-└── workflow_templates
-    ├── id (uuid, pk)
-    ├── name (text)
-    ├── description (text)
-    ├── category (text)
-    ├── nodes (jsonb)
-    ├── edges (jsonb)
-    └── is_public (boolean)
-```
+**Files to modify:**
+- `src/lib/nodes/definitions.ts` - add new node definitions
+- `src/components/workflow/Panel/NodeConfigPanel.tsx` - add config UIs + wire test button
+- `supabase/functions/run-workflow/index.ts` - retry logic, new handlers, Zod validation
+- `supabase/functions/workflow-ai/index.ts` - Zod validation
+- `src/pages/Login.tsx` - add forgot password link
+- `src/App.tsx` - add error boundary, reset password route
+- `src/pages/Dashboard.tsx` - add pagination
+- `src/pages/Settings.tsx` - add credentials management section
 
----
+## Use Case Coverage After Implementation
 
-## Implementation Order
-
-### Step 1: Foundation (Phase 2.1-2.2)
-1. Install `@xyflow/react` and `zustand`
-2. Create route structure and placeholder pages
-3. Set up Zustand stores for workflow state
-
-### Step 2: Canvas (Phase 2.3-2.4)
-1. Build FlowCanvas with React Flow
-2. Create CustomNode component with styling
-3. Implement CustomEdge with animations
-4. Add zoom controls and minimap
-
-### Step 3: Node Library (Phase 2.5)
-1. Create NodeLibrary sidebar
-2. Implement all initial node types
-3. Add drag-and-drop from library to canvas
-4. Build node configuration panel
-
-### Step 4: Persistence (Phase 2.6)
-1. Enable Lovable Cloud
-2. Create database tables
-3. Implement save/load workflows
-4. Add workflow list on dashboard
-
-### Step 5: AI Integration (Phase 3)
-1. Create AI edge function with Lovable AI
-2. Build AI Assistant chat interface
-3. Implement "generate workflow" from natural language
-4. Add AI-powered suggestions
-
----
-
-## New Files Summary
-
-```text
-src/
-├── pages/
-│   ├── Dashboard.tsx
-│   ├── Workflows.tsx
-│   └── WorkflowEditor.tsx
-├── components/
-│   ├── workflow/
-│   │   ├── Canvas/
-│   │   │   ├── FlowCanvas.tsx
-│   │   │   ├── CustomNode.tsx
-│   │   │   ├── CustomEdge.tsx
-│   │   │   └── MiniMap.tsx
-│   │   ├── Sidebar/
-│   │   │   ├── NodeLibrary.tsx
-│   │   │   └── NodeCategory.tsx
-│   │   ├── Panel/
-│   │   │   ├── NodeConfigPanel.tsx
-│   │   │   └── TestRunner.tsx
-│   │   └── Toolbar/
-│   │       └── EditorToolbar.tsx
-│   ├── dashboard/
-│   │   ├── WorkflowCard.tsx
-│   │   ├── StatsCards.tsx
-│   │   └── RecentActivity.tsx
-│   └── ai/
-│       ├── AIAssistant.tsx
-│       └── AIChatMessages.tsx
-├── stores/
-│   ├── workflowStore.ts
-│   ├── uiStore.ts
-│   └── historyStore.ts
-├── types/
-│   └── workflow.ts
-└── lib/
-    └── nodes/
-        ├── index.ts
-        ├── triggers.ts
-        ├── actions.ts
-        ├── logic.ts
-        └── ai.ts
-```
-
----
-
-## Design Consistency
-
-All new components will follow the established design system:
-- Dark futuristic theme with electric blue/neon purple gradients
-- Glassmorphism effects for floating panels
-- Smooth Framer Motion animations
-- JetBrains Mono for code/technical elements
-- Consistent glow effects on interactive elements
-
----
-
-Ready to build the workflow automation platform!
+| Use Case | Supported Nodes |
+|---|---|
+| Lead Generation | Webhook -> HTTP Request -> AI Extract -> Filter -> Email Send |
+| Content Creation | Schedule -> HTTP Request -> AI Chat -> Transform -> Slack |
+| AI Assistant | Webhook -> AI Chat -> Respond to Webhook |
+| Data Pipeline | Schedule -> DB Query -> Transform -> Filter -> Google Sheets |
+| Monitoring | Schedule -> HTTP Request -> If/Else -> Email Send |
 
