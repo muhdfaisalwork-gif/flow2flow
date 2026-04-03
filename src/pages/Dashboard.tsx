@@ -329,6 +329,7 @@ const Dashboard: FC = () => {
               </Button>
             </div>
           )}
+        </>
         )}
 
         {/* Run History Section */}
