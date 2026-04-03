@@ -1,6 +1,5 @@
 import type { Node, Edge } from '@xyflow/react';
 
-// Node type identifiers
 export type NodeType = 
   // Triggers
   | 'webhook-trigger'
@@ -10,11 +9,18 @@ export type NodeType =
   | 'http-request'
   | 'code-node'
   | 'data-transform'
+  | 'email-send'
+  | 'slack-message'
+  | 'db-query'
+  | 'webhook-response'
   // Logic
   | 'if-else'
   | 'switch'
   | 'loop'
   | 'merge'
+  | 'filter'
+  | 'delay'
+  | 'set-variable'
   // AI
   | 'ai-chat'
   | 'ai-extract'
@@ -77,6 +83,7 @@ export interface WorkflowRun {
   inputData?: Record<string, unknown>;
   outputData?: Record<string, unknown>;
   errorLog?: string;
+  retryCount?: number;
 }
 
 export interface WorkflowTemplate {
