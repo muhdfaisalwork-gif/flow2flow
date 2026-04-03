@@ -32,8 +32,13 @@ interface WorkflowFromDB {
   nodes: unknown;
 }
 
+const WORKFLOWS_PER_PAGE = 12;
+
 const Dashboard: FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [workflows, setWorkflows] = useState<WorkflowFromDB[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [workflows, setWorkflows] = useState<WorkflowFromDB[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, signOut } = useAuth();
