@@ -96,7 +96,7 @@ const ResetPassword: FC = () => {
 
           {emailSent && !isRecovery ? (
             <CardContent className="text-center space-y-4">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+              <CheckCircle className="w-12 h-12 text-primary mx-auto" />
               <p className="text-sm text-muted-foreground">
                 Check your email for a password reset link. It may take a few minutes.
               </p>
