@@ -98,11 +98,20 @@ const Dashboard: FC = () => {
     }
   };
 
-  const filteredWorkflows = workflows.filter(
+  const filteredWorkflows = useMemo(() => workflows.filter(
     (w) =>
       w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (w.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+  ), [workflows, searchQuery]);
+
+  const totalPages = Math.ceil(filteredWorkflows.length / WORKFLOWS_PER_PAGE);
+  const paginatedWorkflows = filteredWorkflows.slice(
+    (currentPage - 1) * WORKFLOWS_PER_PAGE,
+    currentPage * WORKFLOWS_PER_PAGE
   );
+
+  // Reset page on search
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   const stats = [
     { label: 'Total Workflows', value: workflows.length, icon: Zap },
