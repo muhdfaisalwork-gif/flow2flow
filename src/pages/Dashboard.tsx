@@ -244,7 +244,7 @@ const Dashboard: FC = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredWorkflows.map((workflow, i) => (
+            {paginatedWorkflows.map((workflow, i) => (
               <motion.div
                 key={workflow.id}
                 initial={{ opacity: 0, y: 20 }}
