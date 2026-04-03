@@ -11,11 +11,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--electric))',
     inputs: 0,
     outputs: 1,
-    defaultData: {
-      method: 'POST',
-      path: '/webhook',
-      headers: {},
-    },
+    defaultData: { method: 'POST', path: '/webhook', headers: {} },
   },
   {
     type: 'schedule-trigger',
@@ -26,10 +22,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--electric))',
     inputs: 0,
     outputs: 1,
-    defaultData: {
-      cron: '0 * * * *',
-      timezone: 'UTC',
-    },
+    defaultData: { cron: '0 * * * *', timezone: 'UTC' },
   },
   {
     type: 'manual-trigger',
@@ -42,7 +35,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     outputs: 1,
     defaultData: {},
   },
-  
+
   // Actions
   {
     type: 'http-request',
@@ -53,12 +46,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--neon))',
     inputs: 1,
     outputs: 1,
-    defaultData: {
-      method: 'GET',
-      url: '',
-      headers: {},
-      body: '',
-    },
+    defaultData: { method: 'GET', url: '', headers: {}, body: '' },
   },
   {
     type: 'code-node',
@@ -69,10 +57,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--neon))',
     inputs: 1,
     outputs: 1,
-    defaultData: {
-      code: '// Your code here\nreturn input;',
-      language: 'javascript',
-    },
+    defaultData: { code: '// Your code here\nreturn input;', language: 'javascript' },
   },
   {
     type: 'data-transform',
@@ -83,12 +68,53 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--neon))',
     inputs: 1,
     outputs: 1,
-    defaultData: {
-      operation: 'map',
-      expression: '',
-    },
+    defaultData: { operation: 'map', expression: '' },
   },
-  
+  {
+    type: 'email-send',
+    label: 'Send Email',
+    description: 'Send emails via SMTP or API',
+    category: 'actions',
+    icon: 'Mail',
+    color: 'hsl(var(--neon))',
+    inputs: 1,
+    outputs: 1,
+    defaultData: { to: '', subject: '', body: '', credentialId: '' },
+  },
+  {
+    type: 'slack-message',
+    label: 'Slack Message',
+    description: 'Send messages to Slack channels',
+    category: 'actions',
+    icon: 'Hash',
+    color: 'hsl(var(--neon))',
+    inputs: 1,
+    outputs: 1,
+    defaultData: { channel: '', message: '', credentialId: '' },
+  },
+  {
+    type: 'db-query',
+    label: 'Database Query',
+    description: 'Query the project database',
+    category: 'actions',
+    icon: 'Database',
+    color: 'hsl(var(--neon))',
+    inputs: 1,
+    outputs: 1,
+    defaultData: { table: '', operation: 'select', filters: {} },
+  },
+  {
+    type: 'webhook-response',
+    label: 'Respond',
+    description: 'Return data to webhook caller',
+    category: 'actions',
+    icon: 'Send',
+    color: 'hsl(var(--neon))',
+    inputs: 1,
+    outputs: 0,
+    defaultData: { statusCode: 200, body: '' },
+  },
+
   // Logic
   {
     type: 'if-else',
@@ -99,11 +125,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--cyber))',
     inputs: 1,
     outputs: 2,
-    defaultData: {
-      condition: '',
-      operator: 'equals',
-      value: '',
-    },
+    defaultData: { condition: '', operator: 'equals', value: '' },
   },
   {
     type: 'switch',
@@ -114,10 +136,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--cyber))',
     inputs: 1,
     outputs: 3,
-    defaultData: {
-      cases: [],
-      defaultOutput: 0,
-    },
+    defaultData: { cases: [], defaultOutput: 0 },
   },
   {
     type: 'loop',
@@ -128,10 +147,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--cyber))',
     inputs: 1,
     outputs: 1,
-    defaultData: {
-      arrayPath: '',
-      batchSize: 1,
-    },
+    defaultData: { arrayPath: '', batchSize: 1 },
   },
   {
     type: 'merge',
@@ -142,11 +158,42 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--cyber))',
     inputs: 2,
     outputs: 1,
-    defaultData: {
-      mode: 'append',
-    },
+    defaultData: { mode: 'append' },
   },
-  
+  {
+    type: 'filter',
+    label: 'Filter',
+    description: 'Pass or reject items by condition',
+    category: 'logic',
+    icon: 'Filter',
+    color: 'hsl(var(--cyber))',
+    inputs: 1,
+    outputs: 2,
+    defaultData: { condition: '', operator: 'equals', value: '' },
+  },
+  {
+    type: 'delay',
+    label: 'Delay',
+    description: 'Wait before continuing',
+    category: 'logic',
+    icon: 'Timer',
+    color: 'hsl(var(--cyber))',
+    inputs: 1,
+    outputs: 1,
+    defaultData: { seconds: 5 },
+  },
+  {
+    type: 'set-variable',
+    label: 'Set Variable',
+    description: 'Assign values for downstream use',
+    category: 'logic',
+    icon: 'Variable',
+    color: 'hsl(var(--cyber))',
+    inputs: 1,
+    outputs: 1,
+    defaultData: { variables: {} },
+  },
+
   // AI
   {
     type: 'ai-chat',
@@ -157,12 +204,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--glow))',
     inputs: 1,
     outputs: 1,
-    defaultData: {
-      model: 'google/gemini-2.5-flash',
-      systemPrompt: '',
-      userPrompt: '',
-      temperature: 0.7,
-    },
+    defaultData: { model: 'google/gemini-2.5-flash', systemPrompt: '', userPrompt: '', temperature: 0.7 },
   },
   {
     type: 'ai-extract',
@@ -173,10 +215,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--glow))',
     inputs: 1,
     outputs: 1,
-    defaultData: {
-      schema: {},
-      instructions: '',
-    },
+    defaultData: { schema: {}, instructions: '' },
   },
   {
     type: 'ai-summarize',
@@ -187,10 +226,7 @@ export const nodeDefinitions: NodeDefinition[] = [
     color: 'hsl(var(--glow))',
     inputs: 1,
     outputs: 1,
-    defaultData: {
-      maxLength: 200,
-      style: 'concise',
-    },
+    defaultData: { maxLength: 200, style: 'concise' },
   },
 ];
 

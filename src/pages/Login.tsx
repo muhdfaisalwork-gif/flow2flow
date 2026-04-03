@@ -183,12 +183,17 @@ const Login: FC = () => {
                 Continue with Google
               </Button>
 
-              <p className="text-sm text-muted-foreground text-center">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-primary hover:underline">
-                  Sign up
+              <div className="text-center space-y-2">
+                <Link to="/reset-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Forgot your password?
                 </Link>
-              </p>
+                <p className="text-sm text-muted-foreground">
+                  Don't have an account?{' '}
+                  <Link to="/signup" className="text-primary hover:underline">
+                    Sign up
+                  </Link>
+                </p>
+              </div>
             </CardFooter>
           </form>
         </Card>

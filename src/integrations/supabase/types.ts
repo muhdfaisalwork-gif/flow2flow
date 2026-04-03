@@ -71,6 +71,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credentials: {
+        Row: {
+          created_at: string
+          encrypted_data: Json
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_data?: Json
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_data?: Json
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_tfa_settings: {
         Row: {
           backup_codes: string[] | null
@@ -124,6 +154,7 @@ export type Database = {
           id: string
           input_data: Json | null
           output_data: Json | null
+          retry_count: number
           started_at: string
           status: Database["public"]["Enums"]["workflow_run_status"]
           workflow_id: string
@@ -135,6 +166,7 @@ export type Database = {
           id?: string
           input_data?: Json | null
           output_data?: Json | null
+          retry_count?: number
           started_at?: string
           status?: Database["public"]["Enums"]["workflow_run_status"]
           workflow_id: string
@@ -146,6 +178,7 @@ export type Database = {
           id?: string
           input_data?: Json | null
           output_data?: Json | null
+          retry_count?: number
           started_at?: string
           status?: Database["public"]["Enums"]["workflow_run_status"]
           workflow_id?: string
