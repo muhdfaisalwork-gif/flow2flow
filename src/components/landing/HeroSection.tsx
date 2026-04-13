@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Github, Play, Sparkles, Zap, Code2 } from "lucide-react";
+import { ArrowRight, Github, Play, Sparkles, Zap, Code2, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WorkflowAnimation } from "./WorkflowAnimation";
+import { DemoVideoModal } from "./DemoVideoModal";
 
 const stats = [
   { value: "10K+", label: "Workflows Created" },
@@ -12,6 +14,7 @@ const stats = [
 ];
 
 export function HeroSection() {
+  const [videoOpen, setVideoOpen] = useState(false);
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Background Effects */}
@@ -86,13 +89,23 @@ export function HeroSection() {
                   Start Building Free
                 </Button>
               </Link>
-              <Link to="/workflow/new">
-                <Button variant="outline" size="lg" className="gap-2 text-base">
-                  <Play className="w-5 h-5" />
-                  Watch Demo
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-2 text-base"
+                onClick={() => setVideoOpen(true)}
+              >
+                <Play className="w-5 h-5" />
+                Watch Demo
+              </Button>
+              <Link to="/demo">
+                <Button variant="secondary" size="lg" className="gap-2 text-base">
+                  <Monitor className="w-5 h-5" />
+                  Try It Free
                 </Button>
               </Link>
             </motion.div>
+            <DemoVideoModal open={videoOpen} onOpenChange={setVideoOpen} />
 
             {/* GitHub Badge */}
             <motion.div
