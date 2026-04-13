@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Zap, Github, Sparkles } from "lucide-react";
+import { ArrowRight, Zap, Github, Sparkles, Monitor } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 export function CTASection() {
@@ -63,16 +64,24 @@ export function CTASection() {
             transition={{ delay: 0.5 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
+            <Link to="/signup">
+              <Button
+                size="lg"
+                className="gradient-primary text-white border-0 glow-primary gap-2 text-lg px-10 py-6"
+              >
+                <Zap className="w-5 h-5" />
+                Get Started Free
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
+            <Link to="/demo">
+              <Button variant="outline" size="lg" className="gap-2 text-lg px-8 py-6">
+                <Monitor className="w-5 h-5" />
+                Try Demo
+              </Button>
+            </Link>
             <Button
-              size="lg"
-              className="gradient-primary text-white border-0 glow-primary gap-2 text-lg px-10 py-6"
-            >
-              <Zap className="w-5 h-5" />
-              Get Started Free
-              <ArrowRight className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="outline"
+              variant="ghost"
               size="lg"
               className="gap-2 text-lg px-8 py-6"
               asChild
