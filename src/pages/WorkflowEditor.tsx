@@ -5,6 +5,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { useWorkflowStore, createNewWorkflow } from '@/stores/workflowStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
 import FlowCanvas from '@/components/workflow/Canvas/FlowCanvas';
 import NodeLibrary from '@/components/workflow/Sidebar/NodeLibrary';
@@ -23,6 +24,7 @@ const WorkflowEditor: FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const demo = useDemo();
   const [isLoading, setIsLoading] = useState(true);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -41,6 +43,12 @@ const WorkflowEditor: FC = () => {
   }, [id, user]);
 
   const loadWorkflow = async () => {
+    if (demo) {
+      setWorkflow(createNewWorkflow());
+      setWorkflowId(null);
+      setIsLoading(false);
+      return;
+    }
     if (!user) return;
     
     setIsLoading(true);
@@ -129,6 +137,10 @@ const WorkflowEditor: FC = () => {
   };
 
   const handleSave = async () => {
+    if (demo) {
+      toast({ title: 'Demo mode', description: 'Sign up to save workflows.' });
+      return;
+    }
     if (!user || !workflow) return;
 
     try {
@@ -192,6 +204,10 @@ const WorkflowEditor: FC = () => {
   };
 
   const handleRun = async () => {
+    if (demo) {
+      toast({ title: 'Demo run', description: 'Workflow simulated successfully! Sign up to run real workflows.' });
+      return;
+    }
     if (!workflowId) {
       toast({
         variant: 'destructive',

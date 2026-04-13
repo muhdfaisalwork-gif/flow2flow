@@ -19,9 +19,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import RunHistory from '@/components/dashboard/RunHistory';
+import { DemoBanner } from '@/components/demo/DemoBanner';
 
 interface WorkflowFromDB {
   id: string;
@@ -40,10 +42,22 @@ const Dashboard: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const { user, signOut } = useAuth();
+  const demo = useDemo();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => { fetchWorkflows(); }, [user]);
+  const linkPrefix = demo ? '/demo' : '';
+
+  useEffect(() => {
+    if (demo) {
+      setWorkflows(demo.workflows.map(w => ({
+        id: w.id, name: w.name, description: w.description, is_active: w.is_active, updated_at: w.updated_at, nodes: w.nodes,
+      })));
+      setIsLoading(false);
+      return;
+    }
+    fetchWorkflows();
+  }, [user, demo]);
 
   const fetchWorkflows = async () => {
     if (!user) return;
@@ -62,11 +76,15 @@ const Dashboard: FC = () => {
     setIsLoading(false);
   };
 
-  const handleSignOut = async () => { await signOut(); navigate('/'); };
+  const handleSignOut = async () => { if (demo) { navigate('/'); return; } await signOut(); navigate('/'); };
 
   const handleDeleteWorkflow = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (demo) {
+      toast({ title: 'Demo mode', description: 'Sign up to manage workflows.' });
+      return;
+    }
     const { error } = await supabase.from('workflows').delete().eq('id', id);
     if (error) {
       toast({ variant: 'destructive', title: 'Error deleting workflow', description: error.message });
@@ -97,6 +115,7 @@ const Dashboard: FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {demo && <DemoBanner />}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -109,11 +128,11 @@ const Dashboard: FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center"><User className="w-4 h-4 text-primary" /></div>
-                  <span className="hidden sm:inline">{user?.email?.split('@')[0]}</span>
+                  <span className="hidden sm:inline">{demo ? demo.demoUser.display_name : user?.email?.split('@')[0]}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled><User className="w-4 h-4 mr-2" />{user?.email}</DropdownMenuItem>
+                <DropdownMenuItem disabled><User className="w-4 h-4 mr-2" />{demo ? demo.demoUser.email : user?.email}</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/settings')}><Settings className="w-4 h-4 mr-2" />Settings</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}><LogOut className="w-4 h-4 mr-2" />Sign out</DropdownMenuItem>
@@ -129,7 +148,7 @@ const Dashboard: FC = () => {
             <h1 className="text-3xl font-bold">My Workflows</h1>
             <p className="text-muted-foreground mt-1">Create and manage your automation workflows</p>
           </div>
-          <Link to="/workflow/new">
+          <Link to={`${linkPrefix}/workflow/new`}>
             <Button className="gradient-primary text-white gap-2"><Plus className="w-4 h-4" />New Workflow</Button>
           </Link>
         </div>
@@ -164,7 +183,7 @@ const Dashboard: FC = () => {
               <h3 className="text-lg font-medium mb-2">{searchQuery ? 'No workflows found' : 'No workflows yet'}</h3>
               <p className="text-muted-foreground text-center mb-4">{searchQuery ? 'Try a different search term' : 'Create your first workflow to get started'}</p>
               {!searchQuery && (
-                <Link to="/workflow/new"><Button className="gap-2"><Plus className="w-4 h-4" />Create Workflow</Button></Link>
+                <Link to={`${linkPrefix}/workflow/new`}><Button className="gap-2"><Plus className="w-4 h-4" />Create Workflow</Button></Link>
               )}
             </CardContent>
           </Card>
@@ -173,7 +192,7 @@ const Dashboard: FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginatedWorkflows.map((workflow, i) => (
                 <motion.div key={workflow.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Link to={`/workflow/${workflow.id}`}>
+                  <Link to={`${linkPrefix}/workflow/${workflow.id}`}>
                     <Card className="border-border/50 bg-card/50 hover:border-primary/50 transition-colors cursor-pointer group">
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
