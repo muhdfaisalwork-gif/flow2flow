@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { DemoProvider } from "@/contexts/DemoContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
@@ -63,6 +64,35 @@ const App = () => (
                   }
                 />
                 <Route path="/workflow/share/:token" element={<SharedWorkflow />} />
+                {/* Demo routes - no auth required */}
+                <Route
+                  path="/demo"
+                  element={
+                    <DemoProvider>
+                      <Dashboard />
+                    </DemoProvider>
+                  }
+                />
+                <Route
+                  path="/demo/workflow/new"
+                  element={
+                    <DemoProvider>
+                      <ErrorBoundary fallbackMessage="The workflow editor crashed.">
+                        <WorkflowEditor />
+                      </ErrorBoundary>
+                    </DemoProvider>
+                  }
+                />
+                <Route
+                  path="/demo/workflow/:id"
+                  element={
+                    <DemoProvider>
+                      <ErrorBoundary fallbackMessage="The workflow editor crashed.">
+                        <WorkflowEditor />
+                      </ErrorBoundary>
+                    </DemoProvider>
+                  }
+                />
                 <Route
                   path="/settings"
                   element={
