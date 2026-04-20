@@ -1,4 +1,4 @@
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Audio, staticFile } from "remotion";
 import { TransitionSeries, springTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
@@ -38,7 +38,7 @@ export const MainVideo: React.FC = () => {
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition {...transition("slide-left")} />
 
-        <TransitionSeries.Sequence durationInFrames={130}>
+        <TransitionSeries.Sequence durationInFrames={170}>
           <Scene3WorkflowCanvas />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition {...transition("fade")} />
