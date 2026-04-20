@@ -27,7 +27,6 @@ export const MainVideo: React.FC = () => {
   return (
     <AbsoluteFill>
       <PersistentBackground />
-      <Audio src={staticFile("audio/ambient.mp3")} volume={0.6} />
       <TransitionSeries>
         <TransitionSeries.Sequence durationInFrames={120}>
           <Scene1HeroIntro />
