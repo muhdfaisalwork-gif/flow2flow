@@ -38,7 +38,7 @@ export const MainVideo: React.FC = () => {
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition {...transition("slide-left")} />
 
-        <TransitionSeries.Sequence durationInFrames={170}>
+        <TransitionSeries.Sequence durationInFrames={270}>
           <Scene3WorkflowCanvas />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition {...transition("fade")} />
