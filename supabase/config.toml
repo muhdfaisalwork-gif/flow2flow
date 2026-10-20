@@ -5,3 +5,7 @@ verify_jwt = false
 
 [functions.run-workflow]
 verify_jwt = false
+
+# Called by Lemon Squeezy (no Supabase JWT); authenticated via X-Signature HMAC instead.
+[functions.billing-webhook]
+verify_jwt = false

@@ -9,6 +9,7 @@ import {
   getStoredSubscription,
   activateLicenseKey,
   saveSubscription,
+  isDemoBillingEnabled,
   type PlanTier,
 } from '@/lib/billing/subscription';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,8 +60,8 @@ const Settings: FC = () => {
   const [subscription, setSubscription] = useState(getStoredSubscription());
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
 
-  const handleActivateLicense = () => {
-    const res = activateLicenseKey(licenseKeyInput);
+  const handleActivateLicense = async () => {
+    const res = await activateLicenseKey(licenseKeyInput);
     if (!res.valid) {
       toast({ variant: 'destructive', title: 'Invalid License Key', description: res.message });
       return;
@@ -268,13 +269,13 @@ const Settings: FC = () => {
 
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">
-                  Activate Lemon Squeezy / Polar.sh License Key (Try: F2F-PRO-2026-VIP)
+                  Activate License Key{isDemoBillingEnabled() ? ' (Demo: F2F-PRO-2026-VIP)' : ''}
                 </Label>
                 <div className="flex gap-2">
                   <Input
                     value={licenseKeyInput}
                     onChange={(e) => setLicenseKeyInput(e.target.value)}
-                    placeholder="F2F-PRO-2026-VIP or UUID key..."
+                    placeholder="Paste your license key..."
                     className="font-mono text-xs"
                   />
                   <Button size="sm" onClick={handleActivateLicense}>

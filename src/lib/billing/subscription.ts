@@ -133,11 +133,13 @@ export function getStoredSubscription(): UserSubscriptionState {
   }
 
   try {
-    // Check URL query parameters for post-checkout callback (?checkout=success&plan=pro)
+    // Post-checkout URL callback (?checkout=success&plan=pro) is DEV-ONLY.
+    // In production anyone could type this URL to unlock a paid plan, so paid
+    // tiers must come from a verified license key (see activateLicenseKey).
     const params = new URLSearchParams(window.location.search);
     const checkoutStatus = params.get('checkout');
     const checkoutPlan = params.get('plan') as PlanTier | null;
-    if (checkoutStatus === 'success' && checkoutPlan && SAAS_PLANS[checkoutPlan]) {
+    if (isDemoBillingEnabled() && checkoutStatus === 'success' && checkoutPlan && SAAS_PLANS[checkoutPlan]) {
       const upgraded: UserSubscriptionState = {
         tier: checkoutPlan,
         interval: (params.get('interval') as BillingInterval) || 'monthly',
@@ -178,54 +180,92 @@ export function saveSubscription(sub: UserSubscriptionState): void {
 }
 
 /**
- * Validates and activates a Lemon Squeezy, Polar.sh, or Flow2Flow license key
- * Format examples:
- * - F2F-PRO-XXXX-XXXX -> activates Pro
- * - F2F-ENT-XXXX-XXXX or F2F-TEAM-XXXX-XXXX -> activates Enterprise
- * - Standard UUID license keys from Lemon Squeezy / Polar.sh (36 chars)
+ * Demo billing shortcuts (F2F-* test keys, ?checkout=success URL unlock,
+ * "Simulate Checkout" button) are only enabled in development/test builds.
+ * Set VITE_ENABLE_DEMO_BILLING="true" to force-enable them on a demo deployment.
  */
-export function activateLicenseKey(rawKey: string): {
+export function isDemoBillingEnabled(): boolean {
+  const env = (import.meta as unknown as { env?: Record<string, string | boolean> }).env || {};
+  return env.DEV === true || env.VITE_ENABLE_DEMO_BILLING === 'true';
+}
+
+export interface LicenseActivationResult {
   valid: boolean;
   subscription?: UserSubscriptionState;
   message: string;
-} {
-  const key = rawKey.trim().toUpperCase();
-  if (!key || key.length < 10) {
-    return {
-      valid: false,
-      message: 'Please enter a valid Lemon Squeezy, Polar.sh, or Flow2Flow license key.',
-    };
-  }
+}
 
-  let tier: PlanTier = 'pro';
-  if (key.startsWith('F2F-ENT') || key.startsWith('F2F-TEAM') || key.includes('-ENT-')) {
-    tier = 'enterprise';
-  } else if (key.startsWith('F2F-PRO') || /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$/i.test(key)) {
-    tier = 'pro';
-  } else {
-    return {
-      valid: false,
-      message:
-        'Unrecognized license format. Use a Lemon Squeezy / Polar UUID key or F2F-PRO-XXXX-XXXX / F2F-TEAM-XXXX-XXXX.',
-    };
-  }
+const LEMONSQUEEZY_VALIDATE_URL = 'https://api.lemonsqueezy.com/v1/licenses/validate';
 
-  const subscription: UserSubscriptionState = {
+function tierFromVariantName(name: string): PlanTier {
+  const n = name.toLowerCase();
+  return n.includes('enterprise') || n.includes('team') || n.includes('agency') ? 'enterprise' : 'pro';
+}
+
+function buildLicensedSubscription(tier: PlanTier, key: string, expiresAt?: string | null): UserSubscriptionState {
+  return {
     tier,
     interval: 'monthly',
     status: 'active',
     provider: 'license_key',
     licenseKey: key,
     activatedAt: new Date().toISOString(),
-    renewsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    renewsAt: expiresAt || undefined,
   };
+}
 
-  saveSubscription(subscription);
-  return {
-    valid: true,
-    subscription,
-    message: `Successfully activated ${SAAS_PLANS[tier].name}!`,
-  };
+/**
+ * Validates and activates a license key.
+ * - Production: the key is verified against the Lemon Squeezy License API
+ *   (public endpoint, no secret API key required, CORS-enabled). The tier is
+ *   derived from the purchased variant/product name ("Team"/"Enterprise" -> enterprise, else pro).
+ * - Dev/demo only: F2F-PRO-* / F2F-TEAM-* / F2F-ENT-* test keys activate locally.
+ */
+export async function activateLicenseKey(rawKey: string): Promise<LicenseActivationResult> {
+  const key = rawKey.trim();
+  if (!key || key.length < 10) {
+    return { valid: false, message: 'Please enter a valid license key.' };
+  }
+
+  const upper = key.toUpperCase();
+  if (upper.startsWith('F2F-')) {
+    if (!isDemoBillingEnabled()) {
+      return { valid: false, message: 'Demo license keys are disabled on this deployment.' };
+    }
+    const tier: PlanTier =
+      upper.startsWith('F2F-ENT') || upper.startsWith('F2F-TEAM') ? 'enterprise' : upper.startsWith('F2F-PRO') ? 'pro' : 'free';
+    if (tier === 'free') {
+      return { valid: false, message: 'Unrecognized demo key. Use F2F-PRO-XXXX or F2F-TEAM-XXXX.' };
+    }
+    const subscription = buildLicensedSubscription(tier, upper, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
+    saveSubscription(subscription);
+    return { valid: true, subscription, message: `Demo: activated ${SAAS_PLANS[tier].name}.` };
+  }
+
+  try {
+    const res = await fetch(LEMONSQUEEZY_VALIDATE_URL, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ license_key: key }).toString(),
+    });
+    const data = (await res.json()) as {
+      valid?: boolean;
+      error?: string | null;
+      license_key?: { status?: string; expires_at?: string | null };
+      meta?: { variant_name?: string; product_name?: string };
+    };
+
+    if (!data.valid || (data.license_key?.status && !['active', 'inactive'].includes(data.license_key.status))) {
+      return { valid: false, message: data.error || 'This license key is invalid, expired, or disabled.' };
+    }
+
+    const tier = tierFromVariantName(`${data.meta?.variant_name ?? ''} ${data.meta?.product_name ?? ''}`);
+    const subscription = buildLicensedSubscription(tier, key, data.license_key?.expires_at);
+    saveSubscription(subscription);
+    return { valid: true, subscription, message: `Successfully activated ${SAAS_PLANS[tier].name}!` };
+  } catch {
+    return { valid: false, message: 'Could not reach the license server. Check your connection and try again.' };
+  }
 }
 
 /**

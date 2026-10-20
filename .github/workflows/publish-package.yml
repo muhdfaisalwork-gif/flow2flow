@@ -29,14 +29,26 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
       - name: Run unit & integration tests
         run: npm run test
 
       - name: Build production bundle
         run: npm run build
 
-      - name: Publish to GitHub Packages
+      - name: Publish to GitHub Packages (skip if this version already exists)
         run: |
-          npm publish --ignore-scripts || echo "Package version already published to GitHub Packages"
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::notice::$NAME@$VERSION is already published. Bump the version in package.json to publish a new release."
+          else
+            npm publish --ignore-scripts
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

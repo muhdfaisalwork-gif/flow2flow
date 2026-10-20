@@ -138,7 +138,7 @@ export function validateAndRepairWorkflow(
   rawEdges: WorkflowEdge[]
 ): GraphValidationReport {
   const repairsApplied: string[] = [];
-  let nodes = rawNodes.map((n) => ({
+  let nodes: WorkflowNode[] = rawNodes.map((n) => ({
     ...n,
     position: {
       x: Number.isFinite(n.position?.x) ? n.position.x : 100,

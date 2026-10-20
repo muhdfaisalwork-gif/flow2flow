@@ -30,6 +30,7 @@ import {
   activateLicenseKey,
   getCheckoutUrl,
   saveSubscription,
+  isDemoBillingEnabled,
 } from '@/lib/billing/subscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -43,6 +44,8 @@ export function PricingSection() {
   const [checkoutModalTier, setCheckoutModalTier] = useState<PlanTier | null>(null);
   const [licenseInput, setLicenseInput] = useState('');
   const [copiedDemoKey, setCopiedDemoKey] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+  const demoBilling = isDemoBillingEnabled();
 
   useEffect(() => {
     const handler = () => setCurrentSub(getStoredSubscription());
@@ -70,8 +73,10 @@ export function PricingSection() {
     setCheckoutModalTier(tier);
   };
 
-  const handleActivateLicense = () => {
-    const result = activateLicenseKey(licenseInput);
+  const handleActivateLicense = async () => {
+    setIsActivating(true);
+    const result = await activateLicenseKey(licenseInput);
+    setIsActivating(false);
     if (!result.valid) {
       toast.error(result.message);
       return;
@@ -288,10 +293,11 @@ export function PricingSection() {
                   placeholder="F2F-PRO-2026-XXXX or UUID key..."
                   className="font-mono text-xs"
                 />
-                <Button onClick={handleActivateLicense} size="sm">
-                  Activate
+                <Button onClick={handleActivateLicense} size="sm" disabled={isActivating}>
+                  {isActivating ? 'Checking…' : 'Activate'}
                 </Button>
               </div>
+              {demoBilling && (
               <div className="flex items-center justify-between pt-1">
                 <span className="text-[11px] text-muted-foreground">
                   Demo Test Key: <code className="text-primary font-mono">F2F-PRO-2026-VIP</code>
@@ -308,9 +314,11 @@ export function PricingSection() {
                   {copiedDemoKey ? 'Filled!' : 'Fill Demo Key'}
                 </button>
               </div>
+              )}
             </div>
 
-            {/* Option 2: Zero-Cost Founder Setup Guide */}
+            {/* Option 2: Founder setup guide — only shown on dev/demo builds, never to paying customers */}
+            {demoBilling && (
             <div className="space-y-2 rounded-lg border border-primary/30 p-4 bg-primary/5">
               <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
                 <Rocket className="w-3.5 h-3.5" />
@@ -339,8 +347,8 @@ export function PricingSection() {
                   ($0/month — they only take ~5% when someone pays you).
                 </li>
                 <li>
-                  Create a <strong>$19/mo Pro</strong> product and enable <strong>License Keys</strong> or redirect URL{' '}
-                  <code className="text-[11px] text-foreground">?checkout=success&amp;plan=pro</code>.
+                  Create a <strong>$19/mo Pro</strong> product and enable <strong>License Keys</strong> on it — customers
+                  paste the emailed key here and it is verified against the Lemon Squeezy License API.
                 </li>
                 <li>
                   Add <code className="text-[11px] text-foreground">VITE_LEMONSQUEEZY_PRO_URL=https://...</code> in your
@@ -348,13 +356,14 @@ export function PricingSection() {
                 </li>
               </ol>
             </div>
+            )}
           </div>
 
           <DialogFooter className="flex sm:justify-between gap-2">
             <Button variant="ghost" size="sm" onClick={() => setCheckoutModalTier(null)}>
               Close
             </Button>
-            {checkoutModalTier && checkoutModalTier !== 'free' && (
+            {demoBilling && checkoutModalTier && checkoutModalTier !== 'free' && (
               <Button
                 size="sm"
                 className="gradient-primary text-white border-0"

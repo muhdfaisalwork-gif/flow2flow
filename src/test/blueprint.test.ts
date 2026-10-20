@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   parseN8nWorkflow,
   resolveN8nNodeMeta,
@@ -309,24 +309,61 @@ describe('4. Sandboxed Microservices Task Runner & Safe Expression Evaluator (ex
   });
 });
 
-describe('5. Zero-Cost SaaS Subscription & Merchant-of-Record Engine (subscription.ts)', () => {
-  it('activates Pro and Enterprise plans via Lemon Squeezy / Polar.sh license keys at $0 server cost', async () => {
-    const { SAAS_PLANS, activateLicenseKey, getStoredSubscription } = await import(
+describe('5. SaaS Subscription & License Engine (subscription.ts)', () => {
+  it('activates Pro/Team via demo keys only when demo billing is enabled (dev/test)', async () => {
+    const { SAAS_PLANS, activateLicenseKey, getStoredSubscription, isDemoBillingEnabled } = await import(
       '../lib/billing/subscription'
     );
     expect(SAAS_PLANS.free.monthlyPrice).toBe(0);
     expect(SAAS_PLANS.pro.monthlyPrice).toBe(19);
     expect(SAAS_PLANS.enterprise.monthlyPrice).toBe(49);
+    expect(isDemoBillingEnabled()).toBe(true); // vitest runs with DEV=true
 
-    const invalid = activateLicenseKey('short');
-    expect(invalid.valid).toBe(false);
+    expect((await activateLicenseKey('short')).valid).toBe(false);
 
-    const proActivation = activateLicenseKey('F2F-PRO-2026-VIP');
-    expect(proActivation.valid).toBe(true);
+    expect((await activateLicenseKey('F2F-PRO-2026-VIP')).valid).toBe(true);
     expect(getStoredSubscription().tier).toBe('pro');
 
-    const entActivation = activateLicenseKey('F2F-TEAM-2026-AGENCY');
-    expect(entActivation.valid).toBe(true);
+    expect((await activateLicenseKey('F2F-TEAM-2026-AGENCY')).valid).toBe(true);
     expect(getStoredSubscription().tier).toBe('enterprise');
+  });
+
+  it('verifies real keys against the Lemon Squeezy License API and rejects invalid ones', async () => {
+    const { activateLicenseKey, getStoredSubscription } = await import('../lib/billing/subscription');
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    // Invalid key -> rejected, stored tier unchanged
+    localStorage.clear();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ valid: false, error: 'license_key not found.' }), { status: 404 })
+    );
+    const bad = await activateLicenseKey('38b1460a-5104-4067-a91d-77b872934d51');
+    expect(bad.valid).toBe(false);
+    expect(getStoredSubscription().tier).toBe('free');
+
+    // Valid Team variant -> enterprise tier
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          valid: true,
+          license_key: { status: 'active', expires_at: null },
+          meta: { variant_name: 'Team & Agency (Monthly)', product_name: 'Flow2Flow' },
+        }),
+        { status: 200 }
+      )
+    );
+    const good = await activateLicenseKey('38b1460a-5104-4067-a91d-77b872934d51');
+    expect(good.valid).toBe(true);
+    expect(getStoredSubscription().tier).toBe('enterprise');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.lemonsqueezy.com/v1/licenses/validate',
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    // Network failure -> graceful rejection
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    expect((await activateLicenseKey('38b1460a-5104-4067-a91d-77b872934d51')).valid).toBe(false);
+
+    fetchMock.mockRestore();
   });
 });

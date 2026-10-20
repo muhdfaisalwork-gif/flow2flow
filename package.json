@@ -1,7 +1,7 @@
 {
   "name": "@muhdfaisalwork-gif/flow2flow",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Flow2Flow — Apache 2.0 Open-Source AI Workflow Automation Platform with Universal n8n Importer, 128+ Enterprise Templates, Prompt-to-Flow Copilot & Sandboxed Task Runner",
   "license": "Apache-2.0",
   "type": "module",
@@ -16,6 +16,7 @@
   },
   "files": [
     "dist",
+    "!dist/demo-video.mp4",
     "src/index.ts",
     "src/types",
     "src/lib",
@@ -29,7 +30,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
