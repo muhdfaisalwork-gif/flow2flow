@@ -1,0 +1,42 @@
+name: Publish Package to GitHub Packages
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & GitHub Packages Registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@muhdfaisalwork-gif'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run unit & integration tests
+        run: npm run test
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Publish to GitHub Packages
+        run: |
+          npm publish --ignore-scripts || echo "Package version already published to GitHub Packages"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
