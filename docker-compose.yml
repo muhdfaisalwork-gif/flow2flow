@@ -5,17 +5,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: node:20-alpine
+    image: ghcr.io/muhdfaisalwork-gif/flow2flow:latest
     container_name: flow2flow-web
-    working_dir: /app
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 8080"
     ports:
-      - "8080:8080"
+      - "8080:80"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL:-http://localhost:54321}
       - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY:-public-anon-key}
       - REDIS_URL=redis://redis:6379
