@@ -17,4 +17,17 @@ export default defineConfig(() => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-xyflow": ["@xyflow/react"],
+          "vendor-motion": ["framer-motion", "lucide-react"],
+          "vendor-supabase": ["@supabase/supabase-js", "@tanstack/react-query"],
+        },
+      },
+    },
+  },
 }));
