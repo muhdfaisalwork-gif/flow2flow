@@ -346,18 +346,19 @@ function executeSetVariable(config: Record<string, unknown>, context: ExecutionC
 }
 
 async function executeAIChat(config: Record<string, unknown>, context: ExecutionContext): Promise<unknown> {
-  const model = (config.model as string) || "google/gemini-3-flash-preview";
+  const model = (config.model as string) || "gpt-4o-mini";
   const systemPrompt = config.systemPrompt as string;
   const userPrompt = config.userPrompt as string;
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+  const apiKey = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("AI_API_KEY");
+  const apiUrl = Deno.env.get("AI_GATEWAY_URL") || "https://api.openai.com/v1/chat/completions";
+  if (!apiKey) throw new Error("OPENAI_API_KEY or AI_API_KEY not configured");
   const processedPrompt = userPrompt?.replace(/\{\{input\}\}/g, JSON.stringify(context.input));
   const messages: Array<{ role: string; content: string }> = [];
   if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
   messages.push({ role: "user", content: processedPrompt || JSON.stringify(context.input) });
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch(apiUrl, {
     method: "POST",
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model, messages }),
   });
   if (!response.ok) throw new Error(`AI request failed: ${response.status}`);
@@ -368,13 +369,14 @@ async function executeAIChat(config: Record<string, unknown>, context: Execution
 async function executeAIExtract(config: Record<string, unknown>, context: ExecutionContext): Promise<unknown> {
   const instructions = (config.instructions as string) || "Extract structured data from the input";
   const schema = config.schema || {};
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const apiKey = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("AI_API_KEY");
+  const apiUrl = Deno.env.get("AI_GATEWAY_URL") || "https://api.openai.com/v1/chat/completions";
+  if (!apiKey) throw new Error("OPENAI_API_KEY or AI_API_KEY not configured");
+  const response = await fetch(apiUrl, {
     method: "POST",
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: `Extract data according to this schema: ${JSON.stringify(schema)}. ${instructions}. Return valid JSON only.` },
         { role: "user", content: JSON.stringify(context.input) },
@@ -390,13 +392,14 @@ async function executeAIExtract(config: Record<string, unknown>, context: Execut
 async function executeAISummarize(config: Record<string, unknown>, context: ExecutionContext): Promise<unknown> {
   const maxLength = (config.maxLength as number) || 200;
   const style = (config.style as string) || "concise";
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const apiKey = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("AI_API_KEY");
+  const apiUrl = Deno.env.get("AI_GATEWAY_URL") || "https://api.openai.com/v1/chat/completions";
+  if (!apiKey) throw new Error("OPENAI_API_KEY or AI_API_KEY not configured");
+  const response = await fetch(apiUrl, {
     method: "POST",
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: `Summarize the following content in a ${style} style. Maximum ${maxLength} words.` },
         { role: "user", content: JSON.stringify(context.input) },

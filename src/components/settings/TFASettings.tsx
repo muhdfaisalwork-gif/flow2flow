@@ -168,8 +168,9 @@ export function TFASettings() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-8">
+        <CardContent className="flex items-center justify-center gap-2 py-8">
           <Loader2 className="w-6 h-6 animate-spin" />
+          <span className="text-sm text-muted-foreground">Loading security settings...</span>
         </CardContent>
       </Card>
     );
@@ -301,7 +302,13 @@ export function TFASettings() {
           </div>
 
           {settings?.backup_codes && settings.backup_codes.length > 0 && (
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm">Backup Codes</p>
+                <p className="text-xs text-muted-foreground">
+                  {settings.backup_codes.length} codes remaining
+                </p>
+              </div>
               <Button variant="ghost" size="sm" onClick={() => setShowBackupCodes(true)}>
                 View backup codes
               </Button>

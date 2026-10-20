@@ -88,7 +88,7 @@ export const Scene9Closing: React.FC = () => {
             fontWeight: 700,
           }}
         >
-          flow2flow.lovable.app
+          flow2flow.dev
         </div>
       </div>
     </AbsoluteFill>

@@ -75,7 +75,7 @@ const NodeConfigPanel: FC<NodeConfigPanelProps> = ({ isOpen }) => {
         case 'webhook-response':
           result = { statusCode: config.statusCode || 200, body: config.body || parsedInput };
           break;
-        default:
+        default: {
           // For complex nodes, call the edge function
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) { result = { error: 'Not authenticated' }; break; }
@@ -89,6 +89,8 @@ const NodeConfigPanel: FC<NodeConfigPanelProps> = ({ isOpen }) => {
           } else {
             result = response.data;
           }
+          break;
+        }
       }
 
       setTestOutput(JSON.stringify(result, null, 2));
@@ -416,7 +418,7 @@ function renderNodeConfig(
           <Label>Variables (JSON)</Label>
           <Textarea
             value={JSON.stringify(config.variables || {}, null, 2)}
-            onChange={(e) => { try { onChange('variables', JSON.parse(e.target.value)); } catch {} }}
+            onChange={(e) => { try { onChange('variables', JSON.parse(e.target.value)); } catch { /* ignore invalid JSON */ } }}
             placeholder='{"key": "value"}'
             className="font-mono text-sm bg-background/50 min-h-[120px]"
           />
@@ -445,7 +447,7 @@ function renderNodeConfig(
           <Label>Cases (JSON array)</Label>
           <Textarea
             value={JSON.stringify(config.cases || [], null, 2)}
-            onChange={(e) => { try { onChange('cases', JSON.parse(e.target.value)); } catch {} }}
+            onChange={(e) => { try { onChange('cases', JSON.parse(e.target.value)); } catch { /* ignore invalid JSON */ } }}
             placeholder='[{"condition": "input.type === \"a\"", "label": "Case A"}]'
             className="font-mono text-sm bg-background/50 min-h-[120px]"
           />
@@ -497,7 +499,7 @@ function renderNodeConfig(
             <Label>Schema (JSON)</Label>
             <Textarea
               value={JSON.stringify(config.schema || {}, null, 2)}
-              onChange={(e) => { try { onChange('schema', JSON.parse(e.target.value)); } catch {} }}
+              onChange={(e) => { try { onChange('schema', JSON.parse(e.target.value)); } catch { /* ignore invalid JSON */ } }}
               placeholder='{"name": "string", "email": "string"}'
               className="font-mono text-sm bg-background/50 min-h-[100px]"
             />

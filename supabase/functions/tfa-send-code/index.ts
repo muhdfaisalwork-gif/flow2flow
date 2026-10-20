@@ -63,7 +63,7 @@ serve(async (req: Request) => {
         const resend = new Resend(resendKey);
         
         await resend.emails.send({
-          from: "Flow2Flow <noreply@flow2flow.lovable.app>",
+          from: "Flow2Flow <noreply@flow2flow.dev>",
           to: [user.email!],
           subject: "Your verification code",
           html: `

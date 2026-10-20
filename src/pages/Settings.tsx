@@ -1,9 +1,16 @@
 import { type FC, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Zap, Plus, Trash2, Key, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Zap, Plus, Trash2, Key, Loader2, CreditCard, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TFASettings } from '@/components/settings/TFASettings';
+import {
+  SAAS_PLANS,
+  getStoredSubscription,
+  activateLicenseKey,
+  saveSubscription,
+  type PlanTier,
+} from '@/lib/billing/subscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +56,31 @@ const Settings: FC = () => {
   const [newCredValue, setNewCredValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [runCount, setRunCount] = useState(0);
+  const [subscription, setSubscription] = useState(getStoredSubscription());
+  const [licenseKeyInput, setLicenseKeyInput] = useState('');
+
+  const handleActivateLicense = () => {
+    const res = activateLicenseKey(licenseKeyInput);
+    if (!res.valid) {
+      toast({ variant: 'destructive', title: 'Invalid License Key', description: res.message });
+      return;
+    }
+    setSubscription(getStoredSubscription());
+    setLicenseKeyInput('');
+    toast({ title: 'Subscription Activated!', description: res.message });
+  };
+
+  const handleResetPlan = (tier: PlanTier) => {
+    saveSubscription({
+      tier,
+      interval: 'monthly',
+      status: 'active',
+      provider: tier === 'free' ? 'free' : 'lemonsqueezy',
+      activatedAt: new Date().toISOString(),
+    });
+    setSubscription(getStoredSubscription());
+    toast({ title: `Switched to ${SAAS_PLANS[tier].name}` });
+  };
 
   useEffect(() => {
     if (user) {
@@ -186,6 +218,68 @@ const Settings: FC = () => {
                   <p className="text-sm text-muted-foreground">
                     Member since {new Date(user?.created_at || '').toLocaleDateString()}
                   </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Subscription & Billing */}
+          <Card className="border-primary/30">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    Subscription &amp; Plan
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your monthly plan or activate a Lemon Squeezy / Polar.sh license key
+                  </CardDescription>
+                </div>
+                <Badge className="gradient-primary text-white border-0">
+                  {SAAS_PLANS[subscription.tier].name}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 rounded-lg bg-muted/40 border border-border/60">
+                <div>
+                  <p className="text-sm font-semibold">
+                    {SAAS_PLANS[subscription.tier].name} (${SAAS_PLANS[subscription.tier].monthlyPrice}/mo)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Monthly Quota: {runCount} / {SAAS_PLANS[subscription.tier].limits.maxMonthlyRuns.toLocaleString()} runs used
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link to="/pricing">
+                    <Button size="sm" variant="outline" className="gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
+                      View Plans
+                    </Button>
+                  </Link>
+                  {subscription.tier !== 'free' && (
+                    <Button size="sm" variant="ghost" onClick={() => handleResetPlan('free')}>
+                      Downgrade
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">
+                  Activate Lemon Squeezy / Polar.sh License Key (Try: F2F-PRO-2026-VIP)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={licenseKeyInput}
+                    onChange={(e) => setLicenseKeyInput(e.target.value)}
+                    placeholder="F2F-PRO-2026-VIP or UUID key..."
+                    className="font-mono text-xs"
+                  />
+                  <Button size="sm" onClick={handleActivateLicense}>
+                    Activate Key
+                  </Button>
                 </div>
               </div>
             </CardContent>

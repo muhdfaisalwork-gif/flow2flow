@@ -99,8 +99,9 @@ serve(async (req) => {
 
     const { message, context, type, history } = parsed.data;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const apiKey = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("AI_API_KEY");
+    const apiUrl = Deno.env.get("AI_GATEWAY_URL") || "https://api.openai.com/v1/chat/completions";
+    if (!apiKey) throw new Error("OPENAI_API_KEY or AI_API_KEY is not configured");
 
     const messages: { role: string; content: string }[] = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -181,9 +182,9 @@ serve(async (req) => {
       body.tool_choice = { type: "function", function: { name: "generate_workflow" } };
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(apiUrl, {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 

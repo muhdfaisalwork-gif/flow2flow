@@ -44,6 +44,23 @@ const WorkflowEditor: FC = () => {
 
   const loadWorkflow = async () => {
     if (demo) {
+      if (id && id !== 'new') {
+        const foundDemo = demo.workflows.find((w) => w.id === id);
+        if (foundDemo) {
+          setWorkflow({
+            ...createNewWorkflow(),
+            id: foundDemo.id,
+            name: foundDemo.name,
+            description: foundDemo.description,
+            nodes: foundDemo.nodes,
+            edges: foundDemo.edges,
+            isActive: foundDemo.is_active,
+          });
+          setWorkflowId(foundDemo.id);
+          setIsLoading(false);
+          return;
+        }
+      }
       setWorkflow(createNewWorkflow());
       setWorkflowId(null);
       setIsLoading(false);
@@ -204,36 +221,16 @@ const WorkflowEditor: FC = () => {
   };
 
   const handleRun = async () => {
-    if (demo) {
-      toast({ title: 'Demo run', description: 'Workflow simulated successfully! Sign up to run real workflows.' });
-      return;
-    }
-    if (!workflowId) {
-      toast({
-        variant: 'destructive',
-        title: 'Save first',
-        description: 'Please save your workflow before running it.',
-      });
+    if (demo || !workflowId) {
       return;
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('run-workflow', {
+      await supabase.functions.invoke('run-workflow', {
         body: { workflowId },
       });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Workflow started',
-        description: data?.message || 'Your workflow is now running...',
-      });
     } catch (error) {
-      console.error('Run error:', error);
-      toast({
-        title: 'Workflow started',
-        description: 'Your workflow is now running...',
-      });
+      console.error('Background run sync error:', error);
     }
   };
 

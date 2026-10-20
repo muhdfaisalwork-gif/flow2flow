@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  flow2flow-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: node:20-alpine
+    container_name: flow2flow-web
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 8080"
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL:-http://localhost:54321}
+      - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY:-public-anon-key}
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://flow2flow:flow2flow_secret@postgres:5432/flow2flow
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: flow2flow-postgres
+    environment:
+      POSTGRES_USER: flow2flow
+      POSTGRES_PASSWORD: flow2flow_secret
+      POSTGRES_DB: flow2flow
+    ports:
+      - "5432:5432"
+    volumes:
+      - flow2flow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flow2flow -d flow2flow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: flow2flow-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - flow2flow_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  flow2flow_pgdata:
+  flow2flow_redisdata:

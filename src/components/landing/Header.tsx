@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Menu, X, Github, Star, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const navLinks = [
   { name: "Features", href: "#features" },
   { name: "Compare", href: "#compare" },
+  { name: "Pricing", href: "#pricing" },
   { name: "Docs", href: "#docs" },
 ];
 
@@ -32,8 +33,11 @@ export function Header() {
   const handleOAuthSignIn = async (provider: "google" | "apple") => {
     setIsLoading(provider);
     try {
-      const { error } = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+        },
       });
       if (error) {
         toast.error(`Failed to sign in with ${provider}: ${error.message}`);

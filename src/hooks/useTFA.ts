@@ -17,7 +17,7 @@ export function useTFA() {
 
     // Use the safe view to avoid exposing sensitive fields (totp_secret, backup_codes, phone_number)
     const { data, error } = await supabase
-      .from('user_tfa_settings_safe' as any)
+      .from('user_tfa_settings_safe' as 'user_tfa_settings')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
@@ -51,7 +51,7 @@ export function useTFA() {
 
     // Re-fetch from safe view to avoid exposing secrets
     const { data, error } = await supabase
-      .from('user_tfa_settings_safe' as any)
+      .from('user_tfa_settings_safe' as 'user_tfa_settings')
       .select('*')
       .eq('user_id', user.id)
       .single();
@@ -75,7 +75,7 @@ export function useTFA() {
 
     // Re-fetch from safe view
     const { data, error } = await supabase
-      .from('user_tfa_settings_safe' as any)
+      .from('user_tfa_settings_safe' as 'user_tfa_settings')
       .select('*')
       .eq('user_id', user.id)
       .single();

@@ -6,7 +6,7 @@ import { TFASettings } from "./TFASettings";
 
 // Mock the useTFA hook
 const mockUseTFA = {
-  settings: null as any,
+  settings: null as Record<string, unknown> | null,
   isLoading: false,
   initializeTFA: vi.fn(),
   updateSettings: vi.fn(),
