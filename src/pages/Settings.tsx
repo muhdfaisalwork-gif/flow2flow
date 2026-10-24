@@ -56,9 +56,16 @@ const Settings: FC = () => {
   const [newCredType, setNewCredType] = useState('api_key');
   const [newCredValue, setNewCredValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [runCount, setRunCount] = useState(0);
+  const [runCount, setRunCount] = useState(14);
   const [subscription, setSubscription] = useState(getStoredSubscription());
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
+
+  const activeUser = user || {
+    id: 'demo-user-001',
+    email: 'demo@flow2flow.dev',
+    display_name: 'Demo User',
+    created_at: '2026-01-01T00:00:00Z',
+  };
 
   const handleActivateLicense = async () => {
     const res = await activateLicenseKey(licenseKeyInput);
@@ -84,25 +91,49 @@ const Settings: FC = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchCredentials();
-      fetchUsage();
-    }
+    fetchCredentials();
+    fetchUsage();
   }, [user]);
 
   const fetchCredentials = async () => {
     setIsLoadingCreds(true);
-    const { data, error } = await supabase
-      .from('user_credentials')
-      .select('id, name, type, created_at')
-      .order('created_at', { ascending: false });
+    if (user) {
+      const { data, error } = await supabase
+        .from('user_credentials')
+        .select('id, name, type, created_at')
+        .order('created_at', { ascending: false });
 
-    if (!error && data) setCredentials(data);
+      if (!error && data) {
+        setCredentials(data);
+        setIsLoadingCreds(false);
+        return;
+      }
+    }
+
+    // Fallback to local storage for demo/offline mode
+    try {
+      const local = localStorage.getItem('f2f_demo_credentials');
+      if (local) {
+        setCredentials(JSON.parse(local));
+      } else {
+        const defaultCreds: Credential[] = [
+          { id: 'cred-1', name: 'OpenAI Production Key', type: 'api_key', created_at: new Date(Date.now() - 86400000 * 2).toISOString() },
+          { id: 'cred-2', name: 'Slack Bot OAuth Token', type: 'oauth2', created_at: new Date(Date.now() - 86400000 * 5).toISOString() }
+        ];
+        setCredentials(defaultCreds);
+        localStorage.setItem('f2f_demo_credentials', JSON.stringify(defaultCreds));
+      }
+    } catch {
+      // ignore
+    }
     setIsLoadingCreds(false);
   };
 
   const fetchUsage = async () => {
-    if (!user) return;
+    if (!user) {
+      setRunCount(18);
+      return;
+    }
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -124,36 +155,64 @@ const Settings: FC = () => {
   };
 
   const handleAddCredential = async () => {
-    if (!user || !newCredName.trim() || !newCredValue.trim()) return;
+    if (!newCredName.trim() || !newCredValue.trim()) return;
     setIsSaving(true);
 
-    const { error } = await supabase.from('user_credentials').insert({
-      user_id: user.id,
-      name: newCredName.trim(),
-      type: newCredType,
-      encrypted_data: { value: newCredValue },
-    });
+    if (user) {
+      const { error } = await supabase.from('user_credentials').insert({
+        user_id: user.id,
+        name: newCredName.trim(),
+        type: newCredType,
+        encrypted_data: { value: newCredValue },
+      });
 
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
-    } else {
-      toast({ title: 'Credential added' });
-      setNewCredName('');
-      setNewCredValue('');
-      setShowAddCred(false);
+      if (error) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+        setIsSaving(false);
+        return;
+      }
       fetchCredentials();
+    } else {
+      const newCred: Credential = {
+        id: `cred-${Date.now()}`,
+        name: newCredName.trim(),
+        type: newCredType,
+        created_at: new Date().toISOString(),
+      };
+      const updated = [newCred, ...credentials];
+      setCredentials(updated);
+      try {
+        localStorage.setItem('f2f_demo_credentials', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
     }
+
+    toast({ title: 'Credential added' });
+    setNewCredName('');
+    setNewCredValue('');
+    setShowAddCred(false);
     setIsSaving(false);
   };
 
   const handleDeleteCredential = async (id: string) => {
-    const { error } = await supabase.from('user_credentials').delete().eq('id', id);
-    if (error) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
-    } else {
-      toast({ title: 'Credential deleted' });
+    if (user) {
+      const { error } = await supabase.from('user_credentials').delete().eq('id', id);
+      if (error) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+        return;
+      }
       fetchCredentials();
+    } else {
+      const updated = credentials.filter(c => c.id !== id);
+      setCredentials(updated);
+      try {
+        localStorage.setItem('f2f_demo_credentials', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
     }
+    toast({ title: 'Credential deleted' });
   };
 
   const handleSignOut = async () => {
@@ -165,7 +224,7 @@ const Settings: FC = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2">
+          <Link to={user ? "/dashboard" : "/demo"} className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg gradient-primary">
               <Zap className="w-5 h-5 text-white" />
             </div>
@@ -179,11 +238,11 @@ const Settings: FC = () => {
                   <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
                     <User className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="hidden sm:inline">{user?.email?.split('@')[0]}</span>
+                  <span className="hidden sm:inline">{activeUser.email.split('@')[0]}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled><User className="w-4 h-4 mr-2" />{user?.email}</DropdownMenuItem>
+                <DropdownMenuItem disabled><User className="w-4 h-4 mr-2" />{activeUser.email}</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}><LogOut className="w-4 h-4 mr-2" />Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -194,7 +253,7 @@ const Settings: FC = () => {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center gap-4 mb-8">
-            <Link to="/dashboard">
+            <Link to={user ? "/dashboard" : "/demo"}>
               <Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button>
             </Link>
             <div>
@@ -215,9 +274,9 @@ const Settings: FC = () => {
                   <User className="w-8 h-8 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">{user?.email}</p>
+                  <p className="font-medium">{activeUser.email}</p>
                   <p className="text-sm text-muted-foreground">
-                    Member since {new Date(user?.created_at || '').toLocaleDateString()}
+                    Member since {new Date(activeUser.created_at || Date.now()).toLocaleDateString()}
                   </p>
                 </div>
               </div>

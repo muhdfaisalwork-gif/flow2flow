@@ -96,11 +96,19 @@ const App = () => (
                   }
                 />
                 <Route
+                  path="/demo/settings"
+                  element={
+                    <DemoProvider>
+                      <Settings />
+                    </DemoProvider>
+                  }
+                />
+                <Route
                   path="/settings"
                   element={
-                    <ProtectedRoute>
+                    <DemoProvider>
                       <Settings />
-                    </ProtectedRoute>
+                    </DemoProvider>
                   }
                 />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
