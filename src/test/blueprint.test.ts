@@ -11,6 +11,7 @@ import {
   searchTemplates,
   getTemplateById,
 } from '@/lib/templates/templateRegistry';
+import { OFFICIAL_N8N_TEST_FLOWS } from '@/lib/templates/n8nTestFlows';
 import {
   synthesizeWorkflowHeuristic,
   applyConversationalEdit,
@@ -194,6 +195,37 @@ describe('2. Enterprise Template Ecosystem (templateRegistry.ts)', () => {
     const deepResearch = getTemplateById('bp-ai-deep-research');
     expect(deepResearch).toBeDefined();
     expect(deepResearch!.nodes.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('bundles official n8n test fixtures from n8n-master with 100% valid topological parsing', () => {
+    expect(OFFICIAL_N8N_TEST_FLOWS.length).toBeGreaterThanOrEqual(6);
+
+    for (const flow of OFFICIAL_N8N_TEST_FLOWS) {
+      const parsed = parseN8nWorkflow(flow.n8nJson);
+      expect(parsed.nodes.length).toBeGreaterThan(0);
+      expect(parsed.name).toBeTruthy();
+    }
+
+    // Verify Multi-branch official n8n test flow
+    const multiBranch = OFFICIAL_N8N_TEST_FLOWS.find(
+      (f: { id: string }) => f.id === 'n8n-core-multi-branch'
+    );
+    expect(multiBranch).toBeDefined();
+    const parsedBranch = parseN8nWorkflow(multiBranch.n8nJson);
+    const ifNode = parsedBranch.nodes.find(
+      (n) => n.data.label === 'If' || n.data.type === 'if-else' || n.data.n8nType === 'n8n-nodes-base.if'
+    );
+    expect(ifNode).toBeDefined();
+
+    // Verify LangChain AI Agent official n8n test flow
+    const aiFlow = OFFICIAL_N8N_TEST_FLOWS.find(
+      (f: { id: string }) => f.id === 'n8n-langchain-ai-agent-tools'
+    );
+    expect(aiFlow).toBeDefined();
+    const parsedAi = parseN8nWorkflow(aiFlow.n8nJson);
+    const agentNode = parsedAi.nodes.find((n) => n.data.label.includes('AI Agent'));
+    expect(agentNode).toBeDefined();
+    expect(agentNode!.data.aiSubNodes?.length).toBe(2);
   });
 });
 

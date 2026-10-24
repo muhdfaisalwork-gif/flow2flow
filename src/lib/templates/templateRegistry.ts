@@ -2,6 +2,7 @@
 // Sources: Flow2Flow Master Blueprint, awesome-n8n-templates, and n8n-free-templates
 import type { WorkflowTemplate, TemplateCategory } from '@/types/workflow';
 import { parseN8nWorkflow, type RawN8nWorkflow } from '@/lib/importer/n8nAdapter';
+import { OFFICIAL_N8N_TEST_FLOWS } from '@/lib/templates/n8nTestFlows';
 
 export interface TemplateSeed {
   id: string;
@@ -21,6 +22,7 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
   'Databases & Storage',
   'DevOps & Webhooks',
   'Industry Verticals',
+  'n8n Core Test Fixtures',
 ];
 
 export const TEMPLATE_SEEDS: TemplateSeed[] = [
@@ -39631,6 +39633,20 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
     }
   }
 ];
+
+// Append the Official n8n Core Test Workflows & Fixtures from n8n-master
+export const N8N_TEST_SEEDS: TemplateSeed[] = OFFICIAL_N8N_TEST_FLOWS.map((flow) => ({
+  id: flow.id,
+  name: flow.name,
+  description: flow.description,
+  category: 'n8n Core Test Fixtures' as TemplateCategory,
+  vertical: 'Core Testing & QA',
+  targetOutcome: `Official test fixture (${flow.sourceFixture})`,
+  tags: ['n8n-test', 'official-fixture', flow.category.toLowerCase()],
+  rawN8n: flow.n8nJson as unknown as RawN8nWorkflow,
+}));
+
+TEMPLATE_SEEDS.push(...N8N_TEST_SEEDS);
 
 const hydratedCache = new Map<string, WorkflowTemplate>();
 

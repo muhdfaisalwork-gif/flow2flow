@@ -34,6 +34,7 @@ export type RawN8nConnections = Record<
 >;
 
 export interface RawN8nWorkflow {
+  id?: string;
   name?: string;
   description?: string;
   nodes: RawN8nNode[];

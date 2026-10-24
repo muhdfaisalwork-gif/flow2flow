@@ -20,6 +20,7 @@ import {
   parseN8nWorkflow,
   type N8nImportResult,
 } from '@/lib/importer/n8nAdapter';
+import { OFFICIAL_N8N_TEST_FLOWS } from '@/lib/templates/n8nTestFlows';
 import { useWorkflowStore, createNewWorkflow } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
@@ -228,6 +229,25 @@ const ImportModal: FC<ImportModalProps> = ({ isOpen, onClose }) => {
                     onChange={handleFileUpload}
                     className="hidden"
                   />
+                  <select
+                    onChange={(e) => {
+                      const flow = OFFICIAL_N8N_TEST_FLOWS.find((x) => x.id === e.target.value);
+                      if (flow) {
+                        handleAnalyzeJson(JSON.stringify(flow.n8nJson, null, 2));
+                      }
+                    }}
+                    defaultValue=""
+                    className="h-7 text-xs px-2.5 rounded-md border border-primary/40 bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors cursor-pointer"
+                  >
+                    <option value="" disabled>
+                      ⚡ Load Official n8n Test Fixture...
+                    </option>
+                    {OFFICIAL_N8N_TEST_FLOWS.map((f) => (
+                      <option key={f.id} value={f.id} className="bg-popover text-popover-foreground">
+                        {f.name} ({f.nodeCount} nodes)
+                      </option>
+                    ))}
+                  </select>
                   <Button
                     variant="outline"
                     size="sm"
@@ -235,7 +255,7 @@ const ImportModal: FC<ImportModalProps> = ({ isOpen, onClose }) => {
                     onClick={() => handleAnalyzeJson(SAMPLE_N8N_WORKFLOW)}
                   >
                     <Sparkles className="w-3 h-3 text-primary" />
-                    Load Sample n8n AI Flow
+                    AI Triage Sample
                   </Button>
                   <Button
                     variant="secondary"

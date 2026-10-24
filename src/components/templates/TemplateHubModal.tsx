@@ -13,6 +13,7 @@ import {
   Key,
   ArrowRight,
   TrendingUp,
+  FlaskConical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ const categoryIconMap: Record<string, typeof Sparkles> = {
   'Databases & Storage': Database,
   'DevOps & Webhooks': Terminal,
   'Industry Verticals': Briefcase,
+  'n8n Core Test Fixtures': FlaskConical,
 };
 
 const categoryColorMap: Record<string, string> = {
@@ -54,6 +56,7 @@ const categoryColorMap: Record<string, string> = {
   'Databases & Storage': 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   'DevOps & Webhooks': 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   'Industry Verticals': 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+  'n8n Core Test Fixtures': 'bg-pink-500/15 text-pink-400 border-pink-500/30',
 };
 
 const TemplateHubModal: FC<TemplateHubModalProps> = ({
