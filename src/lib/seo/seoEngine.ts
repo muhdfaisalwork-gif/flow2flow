@@ -7,6 +7,7 @@
 // ============================================================================
 
 import { auditHumanNaturalWriting, HumanizerAuditResult } from './humanizerRules';
+import { auditGeoReadiness, GeoAuditResult } from './geoEngine';
 
 export interface SeoAuditResult {
   score: number; // 0 - 100
@@ -45,6 +46,7 @@ export interface SeoAuditResult {
     hierarchyValid: boolean;
   };
   humanizer: HumanizerAuditResult;
+  geo: GeoAuditResult;
   recommendations: Array<{
     type: 'critical' | 'warning' | 'info';
     message: string;
@@ -344,6 +346,7 @@ export function auditContentForSeo(params: {
       hierarchyValid,
     },
     humanizer,
+    geo: auditGeoReadiness(content, title, targetKeyword),
     recommendations,
     jsonLdSchema,
   };
@@ -392,6 +395,7 @@ export interface OnPageAuditResult {
     h3: number;
   };
   humanizer: HumanizerAuditResult;
+  geo: GeoAuditResult;
   recommendations: Array<{
     type: 'pass' | 'warning' | 'info';
     rule: string;
@@ -448,6 +452,11 @@ export function auditOnPageSeo(title: string, content: string, targetKeyword: st
         ? `Authentic human tone score: ${fullAudit.humanizer.score}/100. Zero banned AI buzzwords found.`
         : `AI tone patterns detected (${fullAudit.humanizer.score}/100). Found ${fullAudit.humanizer.bannedWordsFound.length} buzzwords (${fullAudit.humanizer.bannedWordsFound.map(w => w.word).slice(0, 3).join(', ')}).`,
     },
+    {
+      type: fullAudit.geo.score >= 70 ? 'pass' as const : 'warning' as const,
+      rule: 'AI Search (GEO) Citability',
+      message: `GEO Readiness: ${fullAudit.geo.score}/100 (${fullAudit.geo.rating}). Early direct answer: ${fullAudit.geo.citability.hasEarlyDirectAnswer ? 'Present in first 30%' : 'Missing in opening'}.`,
+    },
   ];
 
   return {
@@ -460,6 +469,7 @@ export function auditOnPageSeo(title: string, content: string, targetKeyword: st
       h3: fullAudit.headingsAnalysis.h3Count,
     },
     humanizer: fullAudit.humanizer,
+    geo: fullAudit.geo,
     recommendations,
     jsonLdSchema: fullAudit.jsonLdSchema,
   };

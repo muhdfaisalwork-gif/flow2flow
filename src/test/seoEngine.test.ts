@@ -1,12 +1,69 @@
 import { describe, it, expect } from 'vitest';
 import { countWords, calculateKeywordDensity, calculateReadability, auditOnPageSeo, generateTechArticleSchema } from '@/lib/seo/seoEngine';
 import { auditHumanNaturalWriting, humanizeContent, BANNED_BUZZWORDS } from '@/lib/seo/humanizerRules';
+import { auditGeoReadiness, generateLlmsTxt, generateContentBrief, getAiShareOfVoiceData } from '@/lib/seo/geoEngine';
 import { researchKeywords, searchKeywords, getRelatedQuestions } from '@/lib/seo/keywordEngine';
 import { backlinkOpportunities, generateOutreachPitch } from '@/lib/seo/backlinkEngine';
 import { aiTechNewsFeed } from '@/lib/seo/aiNewsEngine';
 import { getAllBlogPosts, getBlogPostBySlug, saveCustomBlogPost } from '@/lib/seo/blogEngine';
 
 describe('Shadow Flow SEO Suite & Agents', () => {
+  describe('GEO (Generative Engine Optimization) & SE Ranking Skills', () => {
+    it('audits text for AI search citability and early direct answer', () => {
+      const citableText = `# What is DeepSeek R1?
+DeepSeek R1 is an open-source reasoning model that provides multi-step verification. It reduces cloud inference costs by 90% compared to commercial frontier models.
+
+## How to Deploy DeepSeek R1 in Production
+Teams run the model locally using Ollama with an average latency of 18ms.
+
+| Metric | Commercial API | DeepSeek R1 Local |
+| :--- | :--- | :--- |
+| Latency | 450ms | 18ms |
+| Cost | $15.00/M tokens | $0.00 incremental |
+`;
+      const geoResult = auditGeoReadiness(citableText, 'What is DeepSeek R1?', 'DeepSeek R1');
+      expect(geoResult.score).toBeGreaterThanOrEqual(70);
+      expect(geoResult.citability.hasEarlyDirectAnswer).toBe(true);
+      expect(geoResult.structuralClarity.questionHeadingsCount).toBeGreaterThanOrEqual(2);
+      expect(geoResult.structuralClarity.hasComparisonTable).toBe(true);
+    });
+
+    it('generates standard /llms.txt file adhering to specifications', () => {
+      const llmsTxt = generateLlmsTxt({
+        siteName: 'Shadow Flow',
+        description: 'Visual AI workflow engine',
+        corePages: [
+          { title: 'Docs', path: '/docs', summary: 'Technical quickstart guide' },
+          { title: 'API', path: '/api-reference', summary: 'REST and webhook contracts' },
+        ],
+      });
+      expect(llmsTxt).toContain('# Shadow Flow');
+      expect(llmsTxt).toContain('Documentation & Core Capabilities');
+      expect(llmsTxt).toContain('/docs');
+      expect(llmsTxt).toContain('/api-reference');
+    });
+
+    it('generates a complete writer-ready editorial content brief', () => {
+      const brief = generateContentBrief('DeepSeek R1 Architecture', 'DeepSeek R1');
+      expect(brief.titleOptions.length).toBeGreaterThanOrEqual(3);
+      expect(brief.primaryKeyword).toBe('DeepSeek R1');
+      expect(brief.templateType).toBe('ultimate-guide');
+      expect(brief.h2Outline.length).toBeGreaterThanOrEqual(4);
+      expect(brief.internalLinkingPlan.length).toBeGreaterThanOrEqual(2);
+      expect(brief.schemaRequirements).toContain('TechArticle (Schema.org)');
+    });
+
+    it('computes AI Search Share of Voice matrix across 5 engines', () => {
+      const matrix = getAiShareOfVoiceData();
+      expect(matrix.length).toBeGreaterThanOrEqual(4);
+      const shadowFlowRow = matrix.find(r => r.domain === 'shadowflow.dev');
+      expect(shadowFlowRow).toBeDefined();
+      expect(shadowFlowRow?.googleAiOverview).toBeGreaterThan(0);
+      expect(shadowFlowRow?.chatGpt).toBeGreaterThan(0);
+      expect(shadowFlowRow?.perplexity).toBeGreaterThan(0);
+    });
+  });
+
   describe('82 Human-Natural Writing Rules Engine', () => {
     it('detects banned AI buzzwords with plain replacement suggestions', () => {
       const roboticText = 'In order to delve into this topic, we must leverage a robust and seamless solution across the AI landscape.';

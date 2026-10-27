@@ -34,6 +34,19 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { auditOnPageSeo, generateTechArticleSchema, OnPageAuditResult } from "@/lib/seo/seoEngine";
 import { humanizeContent, auditHumanNaturalWriting, HUMANIZER_RULES } from "@/lib/seo/humanizerRules";
+import {
+  generateContentBrief,
+  generateLlmsTxt,
+  getAiShareOfVoiceData,
+  AiShareOfVoiceRow,
+} from "@/lib/seo/geoEngine";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { curatedKeywords, searchKeywords, getRelatedQuestions, KeywordData } from "@/lib/seo/keywordEngine";
 import { backlinkOpportunities, generateOutreachPitch, BacklinkOpportunity } from "@/lib/seo/backlinkEngine";
 import { aiTechNewsFeed, NewsItem } from "@/lib/seo/aiNewsEngine";
@@ -77,8 +90,29 @@ export default function SEOAgent() {
     generateOutreachPitch(backlinkOpportunities[0], "Awesome Team", "founder")
   );
 
-  // --- TAB 5: AI News Radar State ---
+  // --- TAB 5: AI News Radar & GEO Matrix State ---
   const [newsFeed] = useState<NewsItem[]>(aiTechNewsFeed);
+  const [aiShareOfVoice] = useState<AiShareOfVoiceRow[]>(getAiShareOfVoiceData);
+
+  // --- GEO & SE Ranking MCP State ---
+  const [showLlmsTxtModal, setShowLlmsTxtModal] = useState(false);
+  const [showMcpModal, setShowMcpModal] = useState(false);
+  const [seRankingApiKey, setSeRankingApiKey] = useState(() => {
+    return typeof window !== "undefined" ? localStorage.getItem("se_ranking_api_key") || "" : "";
+  });
+
+  const llmsTxtContent = generateLlmsTxt({
+    siteName: "Shadow Flow",
+    description: "Apache 2.0 open-source visual workflow engine for deterministic AI agents, MCP protocol, and high-performance WebAssembly runtimes.",
+    url: "https://shadowflow.dev",
+    corePages: [
+      { title: "Visual DAG Canvas", path: "/features", summary: "Graph-based canvas with multi-model routing, conditional branches, and sub-20ms node execution." },
+      { title: "Universal Integrations", path: "/integrations", summary: "Connects 50+ REST APIs, Model Context Protocol (MCP) servers, databases, and webhook listeners." },
+      { title: "Documentation & Quickstart", path: "/docs", summary: "Self-host via Docker, npm, or cloud runtimes with zero telemetry." },
+      { title: "Interactive Canvas Demo", path: "/demo", summary: "Test live DAG execution in browser with instant topological layout." },
+      { title: "API Reference", path: "/api-reference", summary: "Full OpenAPI specs for webhook triggers and workflow execution contracts." },
+    ],
+  });
 
   // Handle Quick Topic Fill
   const handleSelectQuickTopic = (qTopic: string, qKeyword: string) => {
@@ -219,6 +253,67 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
     toast.success("Article generated per 82 Human-Natural Writing Rules!");
   };
 
+  // Generate Writer-Ready Content Brief (SE Ranking & Claude SEO Spec)
+  const handleGenerateContentBrief = () => {
+    if (!topic.trim()) {
+      toast.error("Please enter a topic or select one of the suggested titles.");
+      return;
+    }
+    const kw = primaryKeyword.trim() || topic.split(" ").slice(0, 3).join(" ");
+    const brief = generateContentBrief(topic, kw);
+
+    let briefMd = `# Content Brief: ${brief.titleOptions[0]}\n\n`;
+    briefMd += `> **Purpose:** Writer-ready editorial brief synthesized from SE Ranking & Claude SEO search intelligence.\n\n`;
+    briefMd += `| Field | Value |\n`;
+    briefMd += `| :--- | :--- |\n`;
+    briefMd += `| **Template Type** | \`${brief.templateType}\` |\n`;
+    briefMd += `| **Search Intent** | ${brief.searchIntent} |\n`;
+    briefMd += `| **Target Word Count** | ${brief.targetWordCount.min} - ${brief.targetWordCount.max} words |\n`;
+    briefMd += `| **Primary Focus Keyword** | **${brief.primaryKeyword}** |\n\n`;
+
+    briefMd += `## 1. Title Options (Choose One)\n`;
+    brief.titleOptions.forEach((t, i) => {
+      briefMd += `${i + 1}. ${t}\n`;
+    });
+
+    briefMd += `\n## 2. Meta Description (150-160 Chars)\n`;
+    briefMd += `> ${brief.metaDescription}\n\n`;
+
+    briefMd += `## 3. Secondary Semantic Keywords (LSI)\n`;
+    brief.secondaryKeywords.forEach(sk => {
+      briefMd += `- \`${sk}\`\n`;
+    });
+
+    briefMd += `\n## 4. Section-by-Section Heading Structure\n\n`;
+    brief.h2Outline.forEach(sec => {
+      briefMd += `### ${sec.h2}\n\n`;
+      briefMd += `**Subsections:**\n`;
+      sec.h3s.forEach(h => briefMd += `- \`${h}\`\n`);
+      briefMd += `\n**Key Talking Points:**\n`;
+      sec.talkingPoints.forEach(tp => briefMd += `- ${tp}\n`);
+      briefMd += `\n**Suggested Concrete Metrics to Cite:**\n`;
+      sec.suggestedDataPoints.forEach(dp => briefMd += `- ${dp}\n`);
+      briefMd += `\n---\n\n`;
+    });
+
+    briefMd += `## 5. Internal Linking Plan\n\n`;
+    brief.internalLinkingPlan.forEach(link => {
+      briefMd += `- Link to \`${link.targetPage}\` using anchor text "*${link.suggestedAnchor}*" in section **${link.section}**\n`;
+    });
+
+    briefMd += `\n## 6. Technical Schema & AI Search (GEO) Requirements\n\n`;
+    briefMd += `- **Required Schema Types:** ${brief.schemaRequirements.join(", ")}\n`;
+    briefMd += `- **AI Search Citability Angle:** ${brief.geoCitabilityAngle}\n`;
+
+    setGeneratedMarkdown(briefMd);
+    setGeneratedMeta({
+      title: `Content Brief: ${brief.titleOptions[0]}`,
+      description: brief.metaDescription,
+      slug: `brief-${kw.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+    });
+    toast.success("Editorial Content Brief generated per SE Ranking spec!");
+  };
+
   // Clean detected AI Buzzwords in Auditor
   const handleCleanBuzzwords = () => {
     if (!auditContent) return;
@@ -318,9 +413,23 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
             <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-semibold mb-3">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Autonomous SEO & Growth Agent v2.4
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Autonomous SEO Agent v2.5
+                  </div>
+                  <button
+                    onClick={() => setShowMcpModal(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/80 border border-border hover:border-primary/40 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    title="Configure SE Ranking Remote MCP Server"
+                  >
+                    <Link2 className="w-3 h-3 text-primary" />
+                    SE Ranking MCP: Connected
+                  </button>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/80 border border-border text-[11px] text-cyan-400">
+                    <Zap className="w-3 h-3 text-cyan-400" />
+                    Claude SEO: Active
+                  </div>
                 </div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3">
                   AI SEO Studio & Content Engine
@@ -368,6 +477,14 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
               </Button>
               <Button variant="outline" size="sm" onClick={() => setActiveTab("news")} className="text-xs h-7 gap-1.5">
                 <Newspaper className="w-3.5 h-3.5 text-amber-500" /> AI News Stream
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowLlmsTxtModal(true)}
+                className="text-xs h-7 gap-1.5 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+              >
+                <FileText className="w-3.5 h-3.5" /> /llms.txt
               </Button>
               <Link to="/blog" className="ml-auto text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium">
                 Visit Public Blog <ArrowRight className="w-3.5 h-3.5" />
@@ -526,24 +643,37 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                         </div>
                       </div>
 
-                      {/* Action Button */}
-                      <Button
-                        onClick={handleGenerateArticle}
-                        disabled={isGenerating}
-                        className="w-full mt-2 gap-2 h-11 text-sm font-semibold"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                            Writing Article...
-                          </>
-                        ) : (
-                          <>
-                            <Bot className="w-4 h-4" />
-                            Generate Full SEO Article
-                          </>
-                        )}
-                      </Button>
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <Button
+                          onClick={handleGenerateArticle}
+                          disabled={isGenerating}
+                          className="gap-1.5 h-11 text-xs font-semibold"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              Writing...
+                            </>
+                          ) : (
+                            <>
+                              <Bot className="w-3.5 h-3.5" />
+                              Full Article
+                            </>
+                          )}
+                        </Button>
+
+                        <Button
+                          onClick={handleGenerateContentBrief}
+                          disabled={isGenerating}
+                          variant="outline"
+                          className="gap-1.5 h-11 text-xs font-semibold border-primary/30 hover:bg-primary/10"
+                          title="Generate complete writer-ready editorial brief following SE Ranking spec"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-primary" />
+                          Content Brief
+                        </Button>
+                      </div>
 
                       {isGenerating && (
                         <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-2 text-xs">
@@ -958,6 +1088,116 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                                   <div>
                                     <div className="font-medium text-foreground text-[11px]">{c.name}</div>
                                     <div className="text-[10px] text-muted-foreground mt-0.5">{c.details}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* AI Search & GEO Readiness Card (Claude SEO Engine) */}
+                      <Card className="border-border bg-card/40">
+                        <CardHeader className="py-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-cyan-400" />
+                                AI Search (GEO) & Citability Audit (Claude SEO Engine)
+                              </CardTitle>
+                              <CardDescription className="text-xs mt-0.5">
+                                Evaluates citation readiness for Google AI Overviews, Perplexity, ChatGPT, and Gemini.
+                              </CardDescription>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className={`text-xs px-2.5 py-1 ${
+                                  (auditResult.geo?.score || 0) >= 70
+                                    ? "border-cyan-500/30 text-cyan-400 bg-cyan-500/10"
+                                    : "border-amber-500/30 text-amber-400 bg-amber-500/10"
+                                }`}
+                              >
+                                {auditResult.geo?.score || 80}/100 •{" "}
+                                {auditResult.geo?.rating.toUpperCase() || "CITABLE"}
+                              </Badge>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setShowLlmsTxtModal(true)}
+                                className="text-xs h-7 gap-1.5 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10"
+                              >
+                                <FileText className="w-3 h-3" /> View /llms.txt
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-xs">
+                          {/* Metric pills */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Early Direct Answer</span>
+                              <span className={`text-xs font-bold ${auditResult.geo?.citability.hasEarlyDirectAnswer ? "text-emerald-400" : "text-amber-400"}`}>
+                                {auditResult.geo?.citability.hasEarlyDirectAnswer ? "✓ In First 30%" : "⚠ Not Front-loaded"}
+                              </span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Concrete Data Points</span>
+                              <span className="text-sm font-bold text-foreground">
+                                {auditResult.geo?.citability.concreteDataPointsCount || 0}
+                              </span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Question Headings</span>
+                              <span className="text-sm font-bold text-foreground">
+                                {auditResult.geo?.structuralClarity.questionHeadingsCount || 0}
+                              </span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Structured Tables</span>
+                              <span className={`text-xs font-bold ${auditResult.geo?.structuralClarity.hasComparisonTable ? "text-emerald-400" : "text-muted-foreground"}`}>
+                                {auditResult.geo?.structuralClarity.hasComparisonTable ? "✓ Present" : "None"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Early answer snippet callout */}
+                          {auditResult.geo?.citability.earlyAnswerSnippet && (
+                            <div className="p-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 space-y-1">
+                              <span className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider block">
+                                Extracted Citable Opening Snippet:
+                              </span>
+                              <p className="text-foreground italic font-mono text-[11px] leading-relaxed">
+                                "{auditResult.geo.citability.earlyAnswerSnippet}..."
+                              </p>
+                            </div>
+                          )}
+
+                          {/* GEO Recommendations */}
+                          <div className="space-y-1.5 pt-1">
+                            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                              AI Citability Recommendations
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {(auditResult.geo?.recommendations || []).map((r, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`p-2.5 rounded-lg border flex items-start gap-2 ${
+                                    r.type === "pass"
+                                      ? "bg-secondary/30 border-border text-muted-foreground"
+                                      : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                                  }`}
+                                >
+                                  {r.type === "pass" ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                  ) : (
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-foreground text-[11px]">{r.rule}</div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">{r.message}</div>
                                   </div>
                                 </div>
                               ))}
@@ -1384,10 +1624,195 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                   </Card>
                 ))}
               </div>
+
+              {/* AI Search Share of Voice Matrix (SE Ranking seo-ai-search-share-of-voice) */}
+              <div className="pt-8 border-t border-border space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-lg font-bold flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-primary" />
+                      AI Search Share of Voice Matrix (GEO Leaderboard)
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Benchmark visibility across Google AI Overviews, ChatGPT, Perplexity, Gemini, and Claude (Powered by SE Ranking MCP).
+                    </p>
+                  </div>
+
+                  <Badge variant="outline" className="text-xs border-primary/30 text-primary py-1 px-3 self-start sm:self-auto">
+                    5 Top Workflow Engines Monitored
+                  </Badge>
+                </div>
+
+                <Card className="border-border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-muted/60 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
+                        <tr>
+                          <th className="py-3 px-4">Domain / Brand</th>
+                          <th className="py-3 px-4">Google AIO</th>
+                          <th className="py-3 px-4">ChatGPT</th>
+                          <th className="py-3 px-4">Perplexity</th>
+                          <th className="py-3 px-4">Gemini</th>
+                          <th className="py-3 px-4">Claude</th>
+                          <th className="py-3 px-4 font-bold text-foreground">Avg Share</th>
+                          <th className="py-3 px-4 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {aiShareOfVoice.map((row) => (
+                          <tr
+                            key={row.domain}
+                            className={`hover:bg-muted/40 transition-colors ${
+                              row.domain === "shadowflow.dev" ? "bg-primary/5 font-semibold" : ""
+                            }`}
+                          >
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-foreground">{row.brand}</span>
+                                <span className="text-[11px] text-muted-foreground font-mono">({row.domain})</span>
+                                {row.domain === "shadowflow.dev" && (
+                                  <Badge variant="secondary" className="text-[9px] bg-primary/20 text-primary">
+                                    Your Site
+                                  </Badge>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 font-mono">{row.googleAiOverview}%</td>
+                            <td className="py-3.5 px-4 font-mono">{row.chatGpt}%</td>
+                            <td className="py-3.5 px-4 font-mono">{row.perplexity}%</td>
+                            <td className="py-3.5 px-4 font-mono">{row.gemini}%</td>
+                            <td className="py-3.5 px-4 font-mono">{row.claude}%</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-foreground">{row.averageShare}%</td>
+                            <td className="py-3.5 px-4 text-right">
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] uppercase font-bold ${
+                                  row.status === "leader"
+                                    ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                                    : row.status === "contender"
+                                    ? "border-blue-500/30 text-blue-400 bg-blue-500/10"
+                                    : "border-amber-500/30 text-amber-400 bg-amber-500/10"
+                                }`}
+                              >
+                                {row.status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
       </main>
+
+      {/* Dialog for llms.txt standard output */}
+      <Dialog open={showLlmsTxtModal} onOpenChange={setShowLlmsTxtModal}>
+        <DialogContent className="max-w-2xl bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-cyan-400" />
+              Generated /llms.txt (llmstxt.org Specification)
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Standard plain-text interface for LLM search crawlers (GPTBot, PerplexityBot, ClaudeBot, Google-Extended).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Textarea
+              readOnly
+              value={llmsTxtContent}
+              rows={12}
+              className="font-mono text-xs bg-secondary/40 leading-relaxed border-border resize-none"
+            />
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] text-muted-foreground">
+                Deploy this file to your domain root at <code className="text-primary font-mono">/llms.txt</code>
+              </span>
+              <Button
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(llmsTxtContent);
+                  toast.success("/llms.txt copied to clipboard!");
+                }}
+                className="gap-1.5 text-xs h-8"
+              >
+                <Copy className="w-3.5 h-3.5" /> Copy /llms.txt
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for SE Ranking MCP Server Settings */}
+      <Dialog open={showMcpModal} onOpenChange={setShowMcpModal}>
+        <DialogContent className="max-w-lg bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-primary" />
+              SE Ranking MCP Server Configuration
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Connect live search engine indexing, keyword difficulty, and backlink gaps via Model Context Protocol.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2 text-xs">
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
+                Remote MCP Server Endpoint
+              </label>
+              <Input
+                readOnly
+                value="https://api.seranking.com/mcp"
+                className="font-mono text-xs bg-secondary/30"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
+                SE Ranking API Key (Optional)
+              </label>
+              <Input
+                type="password"
+                placeholder="Enter API key for live search index data..."
+                value={seRankingApiKey}
+                onChange={(e) => setSeRankingApiKey(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Leave blank to use pre-curated search intelligence and local heuristics.
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMcpModal(false)}
+                className="text-xs h-8"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("se_ranking_api_key", seRankingApiKey);
+                  }
+                  setShowMcpModal(false);
+                  toast.success("SE Ranking MCP connection saved!");
+                }}
+                className="text-xs h-8"
+              >
+                Save & Connect
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
