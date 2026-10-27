@@ -19,6 +19,25 @@ import SharedWorkflow from "./pages/SharedWorkflow";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import SEOAgent from "./pages/SEOAgent";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import Features from "./pages/Features";
+import Integrations from "./pages/Integrations";
+import Changelog from "./pages/Changelog";
+import Roadmap from "./pages/Roadmap";
+import Docs from "./pages/Docs";
+import ApiReference from "./pages/ApiReference";
+import Community from "./pages/Community";
+import Tutorials from "./pages/Tutorials";
+import About from "./pages/About";
+import Careers from "./pages/Careers";
+import Contact from "./pages/Contact";
+import Partners from "./pages/Partners";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import CookiePolicy from "./pages/CookiePolicy";
+import License from "./pages/License";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +130,26 @@ const App = () => (
                     </DemoProvider>
                   }
                 />
+                {/* Marketing & Public Hub Routes */}
+                <Route path="/features" element={<Features />} />
+                <Route path="/integrations" element={<Integrations />} />
+                <Route path="/changelog" element={<Changelog />} />
+                <Route path="/roadmap" element={<Roadmap />} />
+                <Route path="/seo-agent" element={<SEOAgent />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/docs" element={<Docs />} />
+                <Route path="/api-reference" element={<ApiReference />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/tutorials" element={<Tutorials />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/careers" element={<Careers />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/partners" element={<Partners />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/cookies" element={<CookiePolicy />} />
+                <Route path="/license" element={<License />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
