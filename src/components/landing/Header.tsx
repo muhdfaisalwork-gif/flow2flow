@@ -68,8 +68,8 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <img src={logo} alt="Flow2Flow" className="w-10 h-10 object-contain" />
-            <span className="text-xl font-bold gradient-text">Flow2Flow</span>
+            <img src={logo} alt="Shadow Flow" className="w-10 h-10 object-contain" />
+            <span className="text-xl font-bold gradient-text">Shadow Flow</span>
           </div>
 
           {/* Desktop Navigation */}

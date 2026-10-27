@@ -62,7 +62,7 @@ const Settings: FC = () => {
 
   const activeUser = user || {
     id: 'demo-user-001',
-    email: 'demo@flow2flow.dev',
+    email: 'demo@shadowflow.dev',
     display_name: 'Demo User',
     created_at: '2026-01-01T00:00:00Z',
   };
@@ -228,7 +228,7 @@ const Settings: FC = () => {
             <div className="p-1.5 rounded-lg gradient-primary">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg">Flow2Flow</span>
+            <span className="font-bold text-lg">Shadow Flow</span>
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />

@@ -1,12 +1,12 @@
-# Flow2Flow — Enterprise Open-Source AI Workflow Automation Platform
+# Shadow Flow — Enterprise Open-Source AI Workflow Automation Platform
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Templates: 120+](https://img.shields.io/badge/Templates-120%2B_n8n_Compatible-emerald.svg)](#enterprise-template-ecosystem)
 [![Engine: Sandboxed Task Runner](https://img.shields.io/badge/Runtime-Sandboxed_DAG_Runner-purple.svg)](#sandboxed-microservices-task-runner)
 
-**Flow2Flow** is an enterprise-grade, open-source workflow automation platform designed to deliver complete feature parity with **n8n** while eliminating restrictive `'Sustainable Use'` fair-code licensing barriers. Distributed under the **100% permissive Apache 2.0 license**, Flow2Flow allows developers and enterprises to self-host, embed, white-label, modify, and resell workflows with zero vendor lock-in.
+**Shadow Flow** is an enterprise-grade, open-source workflow automation platform designed to deliver complete feature parity with **n8n** while eliminating restrictive `'Sustainable Use'` fair-code licensing barriers. Distributed under the **100% permissive Apache 2.0 license**, Shadow Flow allows developers and enterprises to self-host, embed, white-label, modify, and resell workflows with zero vendor lock-in.
 
-Combining a **Universal n8n Template Importer**, a **Prompt-to-Flow AI Copilot** (inspired by `@n8n/ai-workflow-builder.ee`), a **Sandboxed Microservices Task Runner** (inspired by `@n8n/task-runner`), and a curated hub of **120+ production templates** across 15+ industry verticals, Flow2Flow transforms natural language and JSON graphs into robust, real-time autonomous systems.
+Combining a **Universal n8n Template Importer**, a **Prompt-to-Flow AI Copilot** (inspired by `@n8n/ai-workflow-builder.ee`), a **Sandboxed Microservices Task Runner** (inspired by `@n8n/task-runner`), and a curated hub of **120+ production templates** across 15+ industry verticals, Shadow Flow transforms natural language and JSON graphs into robust, real-time autonomous systems.
 
 ---
 

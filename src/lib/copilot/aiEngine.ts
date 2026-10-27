@@ -888,7 +888,7 @@ export async function synthesizeWorkflowWithAI(
     return synthesizeWorkflowHeuristic(prompt, existingNodes, existingEdges);
   }
 
-  const systemInstruction = `You are the Flow2Flow Prompt-to-Flow Architect. Return ONLY valid JSON matching the n8n workflow structure:
+  const systemInstruction = `You are the Shadow Flow Prompt-to-Flow Architect. Return ONLY valid JSON matching the n8n workflow structure:
 {
   "name": "Workflow Title",
   "description": "Concise explanation of the workflow",

@@ -272,7 +272,7 @@ export function PricingSection() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-primary" />
-              Upgrade to {checkoutModalTier ? SAAS_PLANS[checkoutModalTier].name : 'Flow2Flow Pro'}
+              Upgrade to {checkoutModalTier ? SAAS_PLANS[checkoutModalTier].name : 'Shadow Flow Pro'}
             </DialogTitle>
             <DialogDescription>
               Activate via Lemon Squeezy / Polar.sh license key or test the live subscription checkout flow.

@@ -1,4 +1,4 @@
-// Flow2Flow App v3 - With Authentication & Error Boundaries
+// Shadow Flow App v3 - With Authentication & Error Boundaries
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";

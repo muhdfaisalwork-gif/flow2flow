@@ -48,7 +48,7 @@ jobs:
             type=sha,prefix=sha-
           labels: |
             org.opencontainers.image.source=https://github.com/muhdfaisalwork-gif/flow2flow
-            org.opencontainers.image.description=Flow2Flow — Apache 2.0 Open-Source AI Workflow Automation Platform with Universal n8n Importer, 128+ Enterprise Templates & AI Copilot
+            org.opencontainers.image.description=Shadow Flow — Apache 2.0 Open-Source AI Workflow Automation Platform with Universal n8n Importer, 128+ Enterprise Templates & AI Copilot
             org.opencontainers.image.licenses=Apache-2.0
 
       - name: Build and push Docker image to ghcr.io

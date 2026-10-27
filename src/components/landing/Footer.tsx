@@ -44,8 +44,8 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <img src={logo} alt="Flow2Flow" className="w-8 h-8 object-contain" />
-              <span className="text-xl font-bold gradient-text">Flow2Flow</span>
+              <img src={logo} alt="Shadow Flow" className="w-8 h-8 object-contain" />
+              <span className="text-xl font-bold gradient-text">Shadow Flow</span>
             </div>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
               The open-source workflow automation platform. Build, automate, and scale
@@ -89,7 +89,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Flow2Flow. All rights reserved.
+            © {new Date().getFullYear()} Shadow Flow. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
             Made with ❤️ by the open-source community

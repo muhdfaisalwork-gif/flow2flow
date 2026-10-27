@@ -2,7 +2,7 @@
   "name": "@muhdfaisalwork-gif/flow2flow",
   "private": false,
   "version": "1.0.2",
-  "description": "Flow2Flow — Apache 2.0 Open-Source AI Workflow Automation Platform with Universal n8n Importer, 128+ Enterprise Templates, Prompt-to-Flow Copilot & Sandboxed Task Runner",
+  "description": "Shadow Flow — Apache 2.0 Open-Source AI Workflow Automation Platform with Universal n8n Importer, 128+ Enterprise Templates, Prompt-to-Flow Copilot & Sandboxed Task Runner",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./src/index.ts",

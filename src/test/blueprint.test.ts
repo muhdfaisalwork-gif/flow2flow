@@ -379,7 +379,7 @@ describe('5. SaaS Subscription & License Engine (subscription.ts)', () => {
         JSON.stringify({
           valid: true,
           license_key: { status: 'active', expires_at: null },
-          meta: { variant_name: 'Team & Agency (Monthly)', product_name: 'Flow2Flow' },
+          meta: { variant_name: 'Team & Agency (Monthly)', product_name: 'Shadow Flow' },
         }),
         { status: 200 }
       )

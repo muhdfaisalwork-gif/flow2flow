@@ -117,7 +117,7 @@ export function importWorkflow(jsonString: string): {
     throw new Error('Invalid JSON format. Please check your file.');
   }
 
-  // 1. Flow2Flow native exported format
+  // 1. Shadow Flow native exported format
   if (data.version && data.format === 'json' && data.workflow) {
     const wf = data.workflow as {
       name: string;
@@ -128,7 +128,7 @@ export function importWorkflow(jsonString: string): {
     };
     return {
       ...wf,
-      sourceFormat: 'Flow2Flow',
+      sourceFormat: 'Shadow Flow',
     };
   }
 
@@ -169,7 +169,7 @@ export function importWorkflow(jsonString: string): {
     );
   }
 
-  // 4. Raw Flow2Flow nodes/edges JSON
+  // 4. Raw Shadow Flow nodes/edges JSON
   if (Array.isArray(data.nodes)) {
     const rawNodes = data.nodes as WorkflowNode[];
     const rawEdges = (data.edges as WorkflowEdge[]) || [];
@@ -189,7 +189,7 @@ export function importWorkflow(jsonString: string): {
   }
 
   throw new Error(
-    'Unrecognized workflow format. Supported formats: Flow2Flow, n8n, Activepieces, Zapier, or any JSON with a nodes array.'
+    'Unrecognized workflow format. Supported formats: Shadow Flow, n8n, Activepieces, Zapier, or any JSON with a nodes array.'
   );
 }
 

@@ -151,7 +151,7 @@ const SharedWorkflow: FC = () => {
             <div className="p-1.5 rounded-lg gradient-primary">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg">Flow2Flow</span>
+            <span className="font-bold text-lg">Shadow Flow</span>
           </Link>
 
           {user ? (

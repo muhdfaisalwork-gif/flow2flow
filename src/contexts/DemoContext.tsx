@@ -33,7 +33,7 @@ const DemoContext = createContext<DemoContextType | null>(null);
 
 const DEMO_USER = {
   id: 'demo-user-001',
-  email: 'demo@flow2flow.dev',
+  email: 'demo@shadowflow.dev',
   display_name: 'Demo User',
 };
 

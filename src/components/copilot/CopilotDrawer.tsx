@@ -62,7 +62,7 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose }) => {
       id: 'welcome',
       role: 'assistant',
       content:
-        "Hi! I'm your **Flow2Flow AI Copilot**.\n\n• **Zero-Cost Heuristic Mode**: Synthesizes and refactors multi-branch workflows 100% offline with zero API keys.\n• **BYOK Multi-Model**: Connect OpenAI (`GPT-4o`), Anthropic (`Claude 3.5 Sonnet`), Google `Gemini`, `Groq`, or local `Ollama`.\n• **Conversational Refactoring**: Try *\"Insert a filter node between step 1 and step 2\"* or *\"Switch model to Claude 3.5 Sonnet\"*.",
+        "Hi! I'm your **Shadow Flow AI Copilot**.\n\n• **Zero-Cost Heuristic Mode**: Synthesizes and refactors multi-branch workflows 100% offline with zero API keys.\n• **BYOK Multi-Model**: Connect OpenAI (`GPT-4o`), Anthropic (`Claude 3.5 Sonnet`), Google `Gemini`, `Groq`, or local `Ollama`.\n• **Conversational Refactoring**: Try *\"Insert a filter node between step 1 and step 2\"* or *\"Switch model to Claude 3.5 Sonnet\"*.",
     },
   ]);
   const [input, setInput] = useState('');

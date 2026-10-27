@@ -1,5 +1,5 @@
 // ============================================================================
-// Flow2Flow — Zero-Cost SaaS Subscription, Quota & Merchant-of-Record Engine
+// Shadow Flow — Zero-Cost SaaS Subscription, Quota & Merchant-of-Record Engine
 // Supports Lemon Squeezy & Polar.sh ($0/mo Merchant of Record) + License Keys
 // ============================================================================
 
@@ -55,7 +55,7 @@ export const SAAS_PLANS: Record<PlanTier, PlanDefinition> = {
   },
   pro: {
     id: 'pro',
-    name: 'Flow2Flow Pro',
+    name: 'Shadow Flow Pro',
     tagline: 'For creators, startups & power automators scaling production flows',
     monthlyPrice: 19,
     annualMonthlyPrice: 15,

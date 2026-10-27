@@ -96,7 +96,7 @@ const Navbar: FC<NavbarProps> = ({
     if (!workflow) return;
 
     const content = exportWorkflow(workflow, nodes, edges, format);
-    const formatLabel = format === 'json' ? 'Flow2Flow' : format;
+    const formatLabel = format === 'json' ? 'Shadow Flow' : format;
     const filename = `${workflow.name.replace(/\s+/g, '-').toLowerCase()}-${format}.json`;
 
     downloadWorkflow(content, filename);
@@ -388,7 +388,7 @@ const Navbar: FC<NavbarProps> = ({
               <DropdownMenuLabel>Export</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleExport('json')}>
                 <Download className="h-4 w-4 mr-2" />
-                Export as Flow2Flow (.json)
+                Export as Shadow Flow (.json)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport('n8n')}>
                 <ExternalLink className="h-4 w-4 mr-2" />

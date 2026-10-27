@@ -74,7 +74,7 @@ const Signup: FC = () => {
     } else {
       toast({
         title: 'Account created!',
-        description: 'Welcome to Flow2Flow. You can now start building workflows.',
+        description: 'Welcome to Shadow Flow. You can now start building workflows.',
       });
       navigate('/dashboard');
     }
@@ -111,7 +111,7 @@ const Signup: FC = () => {
             </div>
             <CardTitle className="text-2xl">Create an account</CardTitle>
             <CardDescription>
-              Start building powerful workflows with Flow2Flow
+              Start building powerful workflows with Shadow Flow
             </CardDescription>
           </CardHeader>
 
