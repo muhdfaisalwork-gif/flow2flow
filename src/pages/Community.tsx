@@ -23,7 +23,7 @@ export default function Community() {
       description: "Star the project, report bugs, review code diffs, or submit pull requests.",
       icon: Github,
       actionText: "Star & Fork on GitHub",
-      href: "https://github.com/muhdfaisalwork-gif/flow2flow",
+      href: "https://github.com/muhdfaisalwork-gif/shadowflow",
       badge: "Open Source (Apache 2.0)",
     },
     {

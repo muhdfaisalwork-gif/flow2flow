@@ -39,7 +39,7 @@ const footerLinks: Record<string, FooterLinkItem[]> = {
 };
 
 const socialLinks = [
-  { name: "GitHub", icon: Github, href: "https://github.com/muhdfaisalwork-gif/flow2flow" },
+  { name: "GitHub", icon: Github, href: "https://github.com/muhdfaisalwork-gif/shadowflow" },
   { name: "Twitter", icon: Twitter, href: "https://twitter.com" },
   { name: "Discord", icon: MessageCircle, href: "https://discord.com" },
 ];

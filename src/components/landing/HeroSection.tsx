@@ -33,7 +33,7 @@ export function HeroSection() {
           >
             {/* Open Source Badge */}
             <motion.a
-              href="https://github.com/muhdfaisalwork-gif/flow2flow"
+              href="https://github.com/muhdfaisalwork-gif/shadowflow"
               target="_blank"
               rel="noopener noreferrer"
               initial={{ opacity: 0, y: 20 }}
@@ -115,7 +115,7 @@ export function HeroSection() {
               className="mt-8 flex items-center gap-4 justify-center lg:justify-start"
             >
               <a
-                href="https://github.com/muhdfaisalwork-gif/flow2flow"
+                href="https://github.com/muhdfaisalwork-gif/shadowflow"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"

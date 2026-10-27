@@ -386,7 +386,7 @@ async function executeSingleNodeSandboxed(
         output: {
           ...currentInput,
           httpStatus: 200,
-          url: config.url || 'https://api.flow2flow.dev/v1/resource',
+          url: config.url || 'https://api.shadowflow.work/v1/resource',
           method: config.method || 'GET',
           response: { ok: true, timestamp: new Date().toISOString() },
         },

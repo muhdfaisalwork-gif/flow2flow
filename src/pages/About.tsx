@@ -100,7 +100,7 @@ export default function About() {
               </p>
             </div>
             <Button asChild className="gap-2 font-semibold shrink-0">
-              <a href="https://github.com/muhdfaisalwork-gif/flow2flow" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/muhdfaisalwork-gif/shadowflow" target="_blank" rel="noopener noreferrer">
                 <Github className="w-4 h-4" /> View GitHub Repository
               </a>
             </Button>

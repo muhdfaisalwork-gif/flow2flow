@@ -148,7 +148,7 @@ We recently open-sourced Shadow Flow (https://shadowflow.dev) under the 100% per
 
 Would you be open to adding Shadow Flow to your directory under "${anchor}"?
 
-Source repo: https://github.com/muhdfaisalwork-gif/flow2flow
+Source repo: https://github.com/muhdfaisalwork-gif/shadowflow
 
 Thank you for curating such a fantastic resource!
 

@@ -301,7 +301,7 @@ export default function Roadmap() {
               </p>
             </div>
             <Button asChild variant="outline" className="shrink-0 gap-2">
-              <a href="https://github.com/muhdfaisalwork-gif/flow2flow/discussions" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/muhdfaisalwork-gif/shadowflow/discussions" target="_blank" rel="noopener noreferrer">
                 <MessageSquare className="w-4 h-4 text-primary" /> Open GitHub Discussion
               </a>
             </Button>

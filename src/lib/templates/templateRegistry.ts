@@ -1,5 +1,5 @@
 // Auto-generated & curated Enterprise Template Ecosystem (120+ Production n8n Templates)
-// Sources: Flow2Flow Master Blueprint, awesome-n8n-templates, and n8n-free-templates
+// Sources: Shadow Flow Master Blueprint, awesome-n8n-templates, and n8n-free-templates
 import type { WorkflowTemplate, TemplateCategory } from '@/types/workflow';
 import { parseN8nWorkflow, type RawN8nWorkflow } from '@/lib/importer/n8nAdapter';
 import { OFFICIAL_N8N_TEST_FLOWS } from '@/lib/templates/n8nTestFlows';
@@ -1498,7 +1498,7 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
             280
           ],
           "parameters": {
-            "subject": "Welcome to Flow2Flow"
+            "subject": "Welcome to Shadow Flow"
           },
           "credentials": {
             "smtp": {
@@ -2530,7 +2530,7 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
           ],
           "parameters": {
             "method": "GET",
-            "url": "https://api.flow2flow.dev/health"
+            "url": "https://api.shadowflow.work/health"
           }
         },
         {
@@ -2794,7 +2794,7 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
           ],
           "parameters": {
             "method": "GET",
-            "url": "https://flow2flow.dev"
+            "url": "https://shadowflow.work"
           }
         },
         {

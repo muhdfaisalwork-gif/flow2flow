@@ -135,7 +135,7 @@ export default function Changelog() {
               Our complete Git commit history and releases are 100% public on GitHub under the Apache 2.0 license.
             </p>
             <Button asChild variant="outline" size="sm" className="gap-2">
-              <a href="https://github.com/muhdfaisalwork-gif/flow2flow" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/muhdfaisalwork-gif/shadowflow" target="_blank" rel="noopener noreferrer">
                 <GitCommit className="w-4 h-4" /> View GitHub Commits
               </a>
             </Button>

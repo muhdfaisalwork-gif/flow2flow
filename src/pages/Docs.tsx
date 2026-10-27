@@ -58,8 +58,8 @@ export default function Docs() {
           <h3 className="text-lg font-semibold pt-4">Option B: Development Setup from Source</h3>
           <div className="p-4 rounded-xl bg-muted/80 border border-border font-mono text-xs space-y-2">
             <div className="text-muted-foreground"># Clone repository and install dependencies</div>
-            <div className="text-primary select-all">git clone https://github.com/muhdfaisalwork-gif/flow2flow.git</div>
-            <div className="text-primary select-all">cd flow2flow-main</div>
+            <div className="text-primary select-all">git clone https://github.com/muhdfaisalwork-gif/shadowflow.git</div>
+            <div className="text-primary select-all">cd shadowflow</div>
             <div className="text-primary select-all">npm install</div>
             <div className="text-emerald-400 font-semibold select-all">npm run dev</div>
           </div>

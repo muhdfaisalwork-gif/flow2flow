@@ -87,7 +87,7 @@ interface ServiceMappingEntry {
 /**
  * 55+ Service Icon & Category Resolver Table
  * Maps raw n8n node type strings (n8n-nodes-base.*, @n8n/n8n-nodes-langchain.*)
- * to canonical categories, Flow2Flow node types, colors, and Lucide SVG icon identifiers.
+ * to canonical categories, Shadow Flow node types, colors, and Lucide SVG icon identifiers.
  */
 export const SERVICE_RESOLVER_TABLE: ServiceMappingEntry[] = [
   // === TRIGGERS ===
@@ -663,7 +663,7 @@ export const SERVICE_RESOLVER_TABLE: ServiceMappingEntry[] = [
 ];
 
 /**
- * Resolves any raw n8n node type string into Flow2Flow metadata, category, and Lucide icon.
+ * Resolves any raw n8n node type string into Shadow Flow metadata, category, and Lucide icon.
  */
 export function resolveN8nNodeMeta(rawN8nType: string): ResolvedNodeMeta {
   for (const entry of SERVICE_RESOLVER_TABLE) {
@@ -975,7 +975,7 @@ export function parseN8nWorkflow(
 
     if (isBranching) multiBranchNodes++;
 
-    // Normalize parameters into Flow2Flow config conventions while preserving all raw parameters
+    // Normalize parameters into Shadow Flow config conventions while preserving all raw parameters
     const rawParams = { ...(rawNode.parameters || {}) };
     const normalizedConfig: Record<string, unknown> = {
       ...rawParams,
@@ -1185,7 +1185,7 @@ export function parseN8nWorkflow(
 }
 
 /**
- * Exports Flow2Flow nodes and edges back into 100% compatible n8n workflow JSON.
+ * Exports Shadow Flow nodes and edges back into 100% compatible n8n workflow JSON.
  */
 export function serializeToN8nJson(
   name: string,

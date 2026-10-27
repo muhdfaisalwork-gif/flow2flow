@@ -1,5 +1,5 @@
 // ============================================================================
-// @muhdfaisalwork-gif/flow2flow — Public Package Entrypoint (GitHub Packages)
+// @muhdfaisalwork-gif/shadowflow — Public Package Entrypoint (GitHub Packages)
 // Exports the Universal n8n Adapter, 128+ Enterprise Templates, AI Copilot,
 // Self-Healing Validator, Sandboxed Execution Engine, SaaS Billing Utilities &
 // Official n8n Core Test Workflows (from n8n-master)
