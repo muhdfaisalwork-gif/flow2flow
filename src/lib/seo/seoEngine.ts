@@ -297,7 +297,7 @@ export function auditContentForSeo(params: {
         name: 'Shadow Flow',
         logo: {
           '@type': 'ImageObject',
-          url: 'https://shadowflow.dev/assets/logo.png',
+          url: 'https://shadowflow.work/favicon.png',
         },
       },
       datePublished: new Date().toISOString(),
@@ -373,7 +373,7 @@ export function generateTechArticleSchema(
       name: 'Shadow Flow',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://shadowflow.dev/assets/logo.png',
+        url: 'https://shadowflow.work/favicon.png',
       },
     },
     datePublished: datePublished || new Date().toISOString(),

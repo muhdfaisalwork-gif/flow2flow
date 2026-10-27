@@ -1,5 +1,5 @@
 {
-  "name": "@muhdfaisalwork-gif/flow2flow",
+  "name": "@muhdfaisalwork-gif/shadowflow",
   "private": false,
   "version": "1.0.2",
   "description": "Shadow Flow — Apache 2.0 Open-Source AI Workflow Automation Platform with Universal n8n Importer, 128+ Enterprise Templates, Prompt-to-Flow Copilot & Sandboxed Task Runner",
@@ -9,7 +9,7 @@
   "types": "./src/index.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/muhdfaisalwork-gif/flow2flow.git"
+    "url": "https://github.com/muhdfaisalwork-gif/shadowflow.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

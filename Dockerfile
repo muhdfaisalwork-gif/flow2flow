@@ -17,7 +17,7 @@ RUN npm run build
 FROM nginx:1.27-alpine
 
 # GitHub Container Registry (ghcr.io) Pre-Defined OCI Annotation Keys
-LABEL org.opencontainers.image.source=https://github.com/muhdfaisalwork-gif/flow2flow
+LABEL org.opencontainers.image.source=https://github.com/muhdfaisalwork-gif/shadowflow
 LABEL org.opencontainers.image.description="Shadow Flow — Apache 2.0 Open-Source AI Workflow Automation Platform with Universal n8n Importer, 128+ Templates & AI Copilot"
 LABEL org.opencontainers.image.licenses=Apache-2.0
 

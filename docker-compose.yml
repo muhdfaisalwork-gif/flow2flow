@@ -1,12 +1,12 @@
 version: '3.9'
 
 services:
-  flow2flow-web:
+  shadowflow-web:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/muhdfaisalwork-gif/flow2flow:latest
-    container_name: flow2flow-web
+    image: ghcr.io/muhdfaisalwork-gif/shadowflow:latest
+    container_name: shadowflow-web
     ports:
       - "8080:80"
     environment:

@@ -93,7 +93,7 @@ npm run test
 ```bash
 docker compose up -d
 ```
-Starts `flow2flow-web` (`:8080`), `postgres` (`pgvector:pg16` on `:5432`), and `redis` (`redis:7-alpine` on `:6379`).
+Starts `shadowflow-web` (`:8080`), `postgres` (`pgvector:pg16` on `:5432`), and `redis` (`redis:7-alpine` on `:6379`).
 
 ---
 
