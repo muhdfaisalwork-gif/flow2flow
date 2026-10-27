@@ -32,7 +32,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { auditOnPageSeo, generateTechArticleSchema, SeoAuditResult } from "@/lib/seo/seoEngine";
+import { auditOnPageSeo, generateTechArticleSchema, OnPageAuditResult } from "@/lib/seo/seoEngine";
+import { humanizeContent, auditHumanNaturalWriting, HUMANIZER_RULES } from "@/lib/seo/humanizerRules";
 import { curatedKeywords, searchKeywords, getRelatedQuestions, KeywordData } from "@/lib/seo/keywordEngine";
 import { backlinkOpportunities, generateOutreachPitch, BacklinkOpportunity } from "@/lib/seo/backlinkEngine";
 import { aiTechNewsFeed, NewsItem } from "@/lib/seo/aiNewsEngine";
@@ -56,7 +57,7 @@ export default function SEOAgent() {
   const [auditTitle, setAuditTitle] = useState("DeepSeek-R1 Architecture: What It Means for Enterprise AI Automation");
   const [auditKeyword, setAuditKeyword] = useState("DeepSeek R1");
   const [auditContent, setAuditContent] = useState(defaultBlogPosts[0]?.content || "");
-  const [auditResult, setAuditResult] = useState<SeoAuditResult | null>(() =>
+  const [auditResult, setAuditResult] = useState<OnPageAuditResult | null>(() =>
     auditOnPageSeo(
       "DeepSeek-R1 Architecture: What It Means for Enterprise AI Automation",
       defaultBlogPosts[0]?.content || "",
@@ -110,30 +111,30 @@ export default function SEOAgent() {
     }
 
     const generatedSlug = kw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const artTitle = `${topic}: The Complete In-Depth Guide (${new Date().getFullYear()})`;
-    const artDesc = `A comprehensive technical guide to ${topic}, covering architecture, integration patterns, benchmarks, and real-world deployment on Shadow Flow.`;
+    const artTitle = `${topic}: Architecture, Code Patterns, and Production Benchmarks (${new Date().getFullYear()})`;
+    const artDesc = `A technical guide to ${topic}, covering pipeline design, node interfaces, benchmarks, and self-hosted deployment on Shadow Flow.`;
 
     const markdownBody = `# ${artTitle}
 
-> **Executive Summary:** Understanding ${topic} is critical for engineering teams scaling autonomous systems. In this architectural guide, we dive deep into performance benchmarks, implementation patterns, and open-source orchestration with Shadow Flow.
+> **Overview:** Running ${topic} in production requires clear boundary checks, deterministic retries, and low-latency node execution. This guide examines real performance benchmarks, implementation patterns, and code examples using Shadow Flow.
 
 ---
 
-## 1. Why ${topic} Matters in ${new Date().getFullYear()}
+## 1. Practical Requirements for ${topic}
 
-The landscape of AI-driven workflow orchestration is transitioning from rigid sequential DAGs to adaptive, autonomous multi-agent pipelines. As teams scale their automation infrastructure, key bottlenecks consistently emerge around latency, token consumption, and state persistence.
+Engineering teams automating multi-step tasks face three immediate operational constraints: API call latency, token expenditure, and state persistence across retries. Moving from fixed linear scripts to autonomous pipelines requires addressing these factors directly.
 
-Here is why **${kw}** is at the center of modern AI engineering:
+Here is how **${kw}** works inside a production workflow:
 
-- **Distributed Resilience:** Eliminates single points of failure across automated business processes.
-- **Cost Reduction:** Reduces redundant LLM round-trips by up to 65% through local deterministic caching.
-- **Universal Interoperability:** Bridges standard REST APIs, event-driven webhooks, and modern AI protocols like Anthropic's Model Context Protocol (MCP).
+- **State Isolation:** Each node maintains an immutable snapshot of incoming and outgoing data, preventing state corruption during unexpected restarts.
+- **Cost Controls:** Deterministic caching reduces redundant model inferences by up to 65% for repeated inputs.
+- **Protocol Compatibility:** Connects standard REST endpoints, webhooks, and Anthropic's Model Context Protocol (MCP) servers into a single graph.
 
 ---
 
 ## 2. Core Architecture and Data Flow
 
-When designing scalable pipelines around ${kw}, separating intent extraction from execution deterministic guarantees is paramount.
+Separating user intent from tool execution ensures that agents cannot trigger unauthorized operations without validation.
 
 \`\`\`
 [Trigger: Webhook / Event]
@@ -148,17 +149,17 @@ When designing scalable pipelines around ${kw}, separating intent extraction fro
 [Deterministic Validation & Output Delivery]
 \`\`\`
 
-### Key Architectural Pillars:
+### Execution Rules:
 
-1. **State Isolation:** Each node maintains immutable execution snapshots.
-2. **Dynamic Fallbacks:** If an external model provider fails, fallback nodes automatically divert traffic.
-3. **Zero-Telemetry Security:** All payloads remain completely inside your private boundary.
+1. **Explicit Validation:** All parameters pass schema verification before tool execution.
+2. **Dynamic Fallbacks:** If a primary model provider returns a rate limit or timeout, the pipeline routes to a secondary configured model.
+3. **Local Boundary:** All payload data stays within your self-hosted instance without external telemetry.
 
 ---
 
 ## 3. Step-by-Step Implementation Guide
 
-To wire this directly into your self-hosted **Shadow Flow** engine, deploy the following configuration:
+To run this pipeline in your self-hosted **Shadow Flow** engine, define the following configuration:
 
 \`\`\`typescript
 import { createWorkflow, nodeTypes } from "@shadowflow/engine";
@@ -188,7 +189,7 @@ export const workflow = createWorkflow({
 
 ---
 
-## 4. Key Performance Metrics and Comparisons
+## 4. Performance Metrics and Benchmarks
 
 | Dimension | Legacy Webhook Automation | Shadow Flow AI Agent Engine |
 | :--- | :--- | :--- |
@@ -199,9 +200,9 @@ export const workflow = createWorkflow({
 
 ---
 
-## 5. Summary & Getting Started
+## 5. Summary and Getting Started
 
-Deploying ${topic} does not require sacrificing developer velocity or enterprise governance. With Shadow Flow's open-source visual canvas and code-first TypeScript API, your team can migrate existing workflows in under 5 minutes.
+Setting up ${topic} does not require rebuilding your backend stack. With Shadow Flow's open-source visual canvas and code-first TypeScript API, teams can inspect and run workflows in minutes.
 
 - ⭐ **Star Shadow Flow on GitHub**
 - 📖 Read the [Documentation](/docs)
@@ -215,7 +216,21 @@ Deploying ${topic} does not require sacrificing developer velocity or enterprise
       slug: generatedSlug,
     });
     setIsGenerating(false);
-    toast.success("Article generated with 100% SEO optimization!");
+    toast.success("Article generated per 82 Human-Natural Writing Rules!");
+  };
+
+  // Clean detected AI Buzzwords in Auditor
+  const handleCleanBuzzwords = () => {
+    if (!auditContent) return;
+    const { cleanedText, replacementsCount } = humanizeContent(auditContent);
+    setAuditContent(cleanedText);
+    const newAudit = auditOnPageSeo(auditTitle, cleanedText, auditKeyword);
+    setAuditResult(newAudit);
+    if (replacementsCount > 0) {
+      toast.success(`Replaced ${replacementsCount} AI buzzword(s) with plain human English per 82 Rules!`);
+    } else {
+      toast.info("No banned buzzwords found in the text.");
+    }
   };
 
   // Publish Generated Article to Blog Store
@@ -571,13 +586,19 @@ Deploying ${topic} does not require sacrificing developer velocity or enterprise
                 {/* Right Output Panel */}
                 <div className="lg:col-span-7 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs">
                         {generatedMarkdown ? `${generatedMarkdown.split(/\s+/).length} Words` : "0 Words"}
                       </Badge>
                       {generatedMeta.slug && (
                         <Badge variant="secondary" className="text-xs font-mono">
                           /{generatedMeta.slug}
+                        </Badge>
+                      )}
+                      {generatedMarkdown && (
+                        <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400 bg-emerald-500/10 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-emerald-400" />
+                          82 Rules: Human Authentic
                         </Badge>
                       )}
                     </div>
@@ -700,9 +721,19 @@ Deploying ${topic} does not require sacrificing developer velocity or enterprise
                         />
                       </div>
 
-                      <Button onClick={handleRunAudit} className="w-full gap-2">
-                        <RefreshCw className="w-4 h-4" /> Run Deep Audit
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={handleRunAudit} className="flex-1 gap-2">
+                          <RefreshCw className="w-4 h-4" /> Run Deep Audit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleCleanBuzzwords}
+                          className="gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 text-xs px-3"
+                          title="Auto-replace AI buzzwords with plain human English per 82 rules"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> Clean Buzzwords
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -802,6 +833,135 @@ Deploying ${topic} does not require sacrificing developer velocity or enterprise
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Human-Natural Writing Verification Card (82 Rules) */}
+                      <Card className="border-border bg-card/40">
+                        <CardHeader className="py-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-emerald-500" />
+                                Human-Natural Writing Audit (82 Rules)
+                              </CardTitle>
+                              <CardDescription className="text-xs mt-0.5">
+                                Strict validation against AI buzzwords, robotic clichés, and significance padding.
+                              </CardDescription>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className={`text-xs px-2.5 py-1 ${
+                                  auditResult.humanizer?.passed
+                                    ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                                    : "border-amber-500/30 text-amber-400 bg-amber-500/10"
+                                }`}
+                              >
+                                {auditResult.humanizer?.score || 100}/100 •{" "}
+                                {auditResult.humanizer?.passed ? "Authentic Human Voice" : "AI Tells Detected"}
+                              </Badge>
+                              {auditResult.humanizer && auditResult.humanizer.bannedWordsFound.length > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleCleanBuzzwords}
+                                  className="text-xs h-7 gap-1.5 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+                                >
+                                  <Sparkles className="w-3 h-3" /> Clean Buzzwords
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-xs">
+                          {/* Metric pills */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Banned Buzzwords</span>
+                              <span className="text-sm font-bold text-foreground">
+                                {auditResult.humanizer?.bannedWordsFound.length || 0}
+                              </span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Formulaic Openers</span>
+                              <span className="text-sm font-bold text-foreground">
+                                {auditResult.humanizer?.bannedPhrasesFound.filter(p => p.rule.includes("Rule 7")).length || 0}
+                              </span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Em-Dash Frequency</span>
+                              <span className="text-sm font-bold text-foreground">
+                                {auditResult.humanizer?.emDashCount || 0}
+                              </span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-secondary/50 border border-border">
+                              <span className="text-muted-foreground block text-[11px]">Chatbot Residue</span>
+                              <span className="text-sm font-bold text-foreground">
+                                {auditResult.humanizer?.bannedPhrasesFound.filter(p => p.rule.includes("Rule 35")).length || 0}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Banned Words with Plain English Replacement Chips */}
+                          {auditResult.humanizer && auditResult.humanizer.bannedWordsFound.length > 0 ? (
+                            <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 space-y-2">
+                              <div className="font-semibold text-amber-400 flex items-center gap-1.5">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                Detected AI Buzzwords (Click 'Clean Buzzwords' to auto-replace):
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {auditResult.humanizer.bannedWordsFound.map((item, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="outline"
+                                    className="text-[11px] bg-background border-border text-foreground py-0.5"
+                                  >
+                                    <span className="line-through text-destructive mr-1">{item.word}</span>
+                                    <span className="text-emerald-400 font-medium">→ {item.suggestion}</span>
+                                    {item.count > 1 && (
+                                      <span className="text-[10px] text-muted-foreground ml-1">({item.count}x)</span>
+                                    )}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-2 text-emerald-400 font-medium">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                              Zero AI buzzwords detected. Text reads naturally with plain verbs and concrete details.
+                            </div>
+                          )}
+
+                          {/* Key Humanizer Rule Checks */}
+                          <div className="space-y-1.5 pt-1">
+                            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                              Rule Verification Checklist
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {(auditResult.humanizer?.checks || []).slice(0, 6).map((c) => (
+                                <div
+                                  key={c.id}
+                                  className={`p-2.5 rounded-lg border flex items-start gap-2 ${
+                                    c.passed
+                                      ? "bg-secondary/30 border-border text-muted-foreground"
+                                      : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                                  }`}
+                                >
+                                  {c.passed ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                  ) : (
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-foreground text-[11px]">{c.name}</div>
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">{c.details}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>

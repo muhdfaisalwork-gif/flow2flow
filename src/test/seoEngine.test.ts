@@ -1,11 +1,56 @@
 import { describe, it, expect } from 'vitest';
 import { countWords, calculateKeywordDensity, calculateReadability, auditOnPageSeo, generateTechArticleSchema } from '@/lib/seo/seoEngine';
+import { auditHumanNaturalWriting, humanizeContent, BANNED_BUZZWORDS } from '@/lib/seo/humanizerRules';
 import { researchKeywords, searchKeywords, getRelatedQuestions } from '@/lib/seo/keywordEngine';
 import { backlinkOpportunities, generateOutreachPitch } from '@/lib/seo/backlinkEngine';
 import { aiTechNewsFeed } from '@/lib/seo/aiNewsEngine';
 import { getAllBlogPosts, getBlogPostBySlug, saveCustomBlogPost } from '@/lib/seo/blogEngine';
 
 describe('Shadow Flow SEO Suite & Agents', () => {
+  describe('82 Human-Natural Writing Rules Engine', () => {
+    it('detects banned AI buzzwords with plain replacement suggestions', () => {
+      const roboticText = 'In order to delve into this topic, we must leverage a robust and seamless solution across the AI landscape.';
+      const audit = auditHumanNaturalWriting(roboticText);
+      expect(audit.passed).toBe(false);
+      expect(audit.score).toBeLessThanOrEqual(80);
+      expect(audit.bannedWordsFound.length).toBeGreaterThanOrEqual(4);
+      expect(audit.bannedWordsFound.some(w => w.word === 'delve')).toBe(true);
+      expect(audit.bannedWordsFound.some(w => w.word === 'landscape')).toBe(true);
+    });
+
+    it('detects formulaic introduction and conclusion patterns', () => {
+      const formulaicIntro = "In today's digital landscape, AI is evolving rapidly. In conclusion, the future will depend on these systems.";
+      const audit = auditHumanNaturalWriting(formulaicIntro);
+      expect(audit.bannedPhrasesFound.length).toBeGreaterThanOrEqual(2);
+      expect(audit.checks.some(c => c.name === 'No Formulaic Introductions' && !c.passed)).toBe(true);
+      expect(audit.checks.some(c => c.name === 'No Formulaic Conclusions' && !c.passed)).toBe(true);
+    });
+
+    it('detects chatbot residue phrases', () => {
+      const chatbotText = "Let's dive in and examine how this works!";
+      const audit = auditHumanNaturalWriting(chatbotText);
+      expect(audit.bannedPhrasesFound.some(p => p.rule.includes('Rule 35'))).toBe(true);
+    });
+
+    it('passes clean, direct, human writing with high score', () => {
+      const naturalText = 'Most clinics now rely on several systems to manage scheduling, billing, clinical notes, and patient communication. Shadow Flow connects these systems using standard webhooks.';
+      const audit = auditHumanNaturalWriting(naturalText);
+      expect(audit.passed).toBe(true);
+      expect(audit.score).toBeGreaterThanOrEqual(90);
+      expect(audit.bannedWordsFound.length).toBe(0);
+    });
+
+    it('humanizeContent automatically replaces buzzwords with plain English', () => {
+      const text = 'We leverage this robust tool to delve into data across the landscape.';
+      const { cleanedText, replacementsCount } = humanizeContent(text);
+      expect(replacementsCount).toBeGreaterThanOrEqual(3);
+      expect(cleanedText.toLowerCase()).not.toContain('leverage');
+      expect(cleanedText.toLowerCase()).not.toContain('robust');
+      expect(cleanedText.toLowerCase()).toContain('use');
+      expect(cleanedText.toLowerCase()).toContain('reliable');
+    });
+  });
+
   describe('SEO Engine (On-Page & Schema)', () => {
     it('correctly calculates word count and keyword density', () => {
       const text = 'DeepSeek R1 is an open-source reasoning model. DeepSeek R1 lowers automation costs significantly.';

@@ -1,9 +1,12 @@
 // ============================================================================
 // Shadow Flow — SEO & AI SEO Engine
 // Built-in heuristics for On-Page SEO scoring, keyword density, readability,
-// heading hierarchy verification, and Schema.org JSON-LD generation.
+// heading hierarchy verification, Schema.org JSON-LD generation, and
+// strict 82 Human-Natural Writing Rules verification.
 // Inspired by sultrix-seo & modern Google Search / Perplexity / AI search standards.
 // ============================================================================
+
+import { auditHumanNaturalWriting, HumanizerAuditResult } from './humanizerRules';
 
 export interface SeoAuditResult {
   score: number; // 0 - 100
@@ -41,6 +44,7 @@ export interface SeoAuditResult {
     hasKeywordInH2: boolean;
     hierarchyValid: boolean;
   };
+  humanizer: HumanizerAuditResult;
   recommendations: Array<{
     type: 'critical' | 'warning' | 'info';
     message: string;
@@ -228,6 +232,44 @@ export function auditContentForSeo(params: {
     recommendations.push({ type: 'warning', message: `Sentences are long (avg ${readability.avgSentenceLength} words/sentence) or overly passive (${Math.round(readability.passiveVoiceRatio * 100)}%). Simplify phrasing.`, impact: '-8 pts' });
   }
 
+  // 82 Human-Natural Writing Rules Audit
+  const humanizer = auditHumanNaturalWriting(content);
+  if (humanizer.bannedWordsFound.length > 0) {
+    const buzzwordPenalty = Math.min(20, humanizer.bannedWordsFound.reduce((acc, curr) => acc + curr.count * 3, 0));
+    score -= buzzwordPenalty;
+    const examples = humanizer.bannedWordsFound
+      .slice(0, 3)
+      .map(w => `"${w.word}" → "${w.suggestion || 'plain alternative'}"`)
+      .join(', ');
+    recommendations.push({
+      type: 'warning',
+      message: `Detected ${humanizer.bannedWordsFound.length} AI buzzwords (${examples}). Replace with plain human verbs per 82 Humanizer Rules.`,
+      impact: `-${buzzwordPenalty} pts`,
+    });
+  }
+
+  if (humanizer.bannedPhrasesFound.length > 0) {
+    const phrasePenalty = Math.min(15, humanizer.bannedPhrasesFound.length * 5);
+    score -= phrasePenalty;
+    const examples = humanizer.bannedPhrasesFound
+      .slice(0, 2)
+      .map(p => `"${p.phrase}"`)
+      .join(', ');
+    recommendations.push({
+      type: 'warning',
+      message: `Detected formulaic AI phrases (${examples}). Start and end directly without significance padding per Rules 5, 7, & 8.`,
+      impact: `-${phrasePenalty} pts`,
+    });
+  }
+
+  if (humanizer.emDashCount > 4) {
+    recommendations.push({
+      type: 'info',
+      message: `Found ${humanizer.emDashCount} em dashes. Use periods or commas instead per Rule 17 (Em-dash control).`,
+      impact: '0 pts',
+    });
+  }
+
   // Bound score
   score = Math.max(10, Math.min(100, score));
 
@@ -301,6 +343,7 @@ export function auditContentForSeo(params: {
       hasKeywordInH2: hasKwInH2,
       hierarchyValid,
     },
+    humanizer,
     recommendations,
     jsonLdSchema,
   };
@@ -339,7 +382,25 @@ export function generateTechArticleSchema(
   };
 }
 
-export function auditOnPageSeo(title: string, content: string, targetKeyword: string) {
+export interface OnPageAuditResult {
+  overallScore: number;
+  wordCount: number;
+  keywordDensity: number;
+  headings: {
+    h1: number;
+    h2: number;
+    h3: number;
+  };
+  humanizer: HumanizerAuditResult;
+  recommendations: Array<{
+    type: 'pass' | 'warning' | 'info';
+    rule: string;
+    message: string;
+  }>;
+  jsonLdSchema: string;
+}
+
+export function auditOnPageSeo(title: string, content: string, targetKeyword: string): OnPageAuditResult {
   const fullAudit = auditContentForSeo({
     title,
     metaDescription: content.slice(0, 160).replace(/[#*_`]/g, '').trim(),
@@ -380,6 +441,13 @@ export function auditOnPageSeo(title: string, content: string, targetKeyword: st
       rule: 'Readability & Passive Voice',
       message: `Average sentence length: ${fullAudit.readability.avgSentenceLength} words. Rating: ${fullAudit.readability.rating}.`,
     },
+    {
+      type: fullAudit.humanizer.passed ? 'pass' as const : 'warning' as const,
+      rule: 'Human-Natural Writing (82 Rules)',
+      message: fullAudit.humanizer.passed
+        ? `Authentic human tone score: ${fullAudit.humanizer.score}/100. Zero banned AI buzzwords found.`
+        : `AI tone patterns detected (${fullAudit.humanizer.score}/100). Found ${fullAudit.humanizer.bannedWordsFound.length} buzzwords (${fullAudit.humanizer.bannedWordsFound.map(w => w.word).slice(0, 3).join(', ')}).`,
+    },
   ];
 
   return {
@@ -391,6 +459,7 @@ export function auditOnPageSeo(title: string, content: string, targetKeyword: st
       h2: fullAudit.headingsAnalysis.h2Count,
       h3: fullAudit.headingsAnalysis.h3Count,
     },
+    humanizer: fullAudit.humanizer,
     recommendations,
     jsonLdSchema: fullAudit.jsonLdSchema,
   };
