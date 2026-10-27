@@ -164,7 +164,7 @@ export default function Careers() {
               We are always excited to connect with talented open-source contributors, systems programmers, and compilers researchers. Send your portfolio and GitHub profile to our talent inbox.
             </p>
             <Button asChild variant="outline" size="sm" className="gap-2">
-              <a href="mailto:careers@shadowflow.dev">
+              <a href="mailto:careers@shadowflow.work">
                 Send Open Application <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </Button>

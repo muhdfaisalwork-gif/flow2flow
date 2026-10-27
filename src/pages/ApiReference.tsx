@@ -28,7 +28,7 @@ const endpoints: Endpoint[] = [
       { name: "id", type: "string (UUID)", required: true, desc: "The unique identifier of the workflow." },
       { name: "sync", type: "boolean", required: false, desc: "If true, blocks until workflow execution finishes." },
     ],
-    curlExample: `curl -X POST https://api.shadowflow.dev/v1/workflows/wf_89a2b1/execute \\
+    curlExample: `curl -X POST https://api.shadowflow.work/v1/workflows/wf_89a2b1/execute \\
   -H "Authorization: Bearer sf_live_9f8d1c7a4" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -59,7 +59,7 @@ const endpoints: Endpoint[] = [
       { name: "limit", type: "number", required: false, desc: "Max number of items to return (default: 20)." },
       { name: "offset", type: "number", required: false, desc: "Pagination offset." },
     ],
-    curlExample: `curl -X GET https://api.shadowflow.dev/v1/workflows?limit=10 \\
+    curlExample: `curl -X GET https://api.shadowflow.work/v1/workflows?limit=10 \\
   -H "Authorization: Bearer sf_live_9f8d1c7a4"`,
     responseExample: `{
   "data": [
@@ -83,7 +83,7 @@ const endpoints: Endpoint[] = [
       { name: "toolName", type: "string", required: true, desc: "Name of registered MCP tool." },
       { name: "arguments", type: "object", required: true, desc: "Input arguments schema." },
     ],
-    curlExample: `curl -X POST https://api.shadowflow.dev/v1/mcp/invoke \\
+    curlExample: `curl -X POST https://api.shadowflow.work/v1/mcp/invoke \\
   -H "Authorization: Bearer sf_live_9f8d1c7a4" \\
   -H "Content-Type: application/json" \\
   -d '{

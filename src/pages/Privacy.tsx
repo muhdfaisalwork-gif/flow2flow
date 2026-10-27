@@ -75,7 +75,7 @@ export default function Privacy() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-foreground">5. GDPR & CCPA Rights</h2>
               <p>
-                You retain full statutory rights to access, rectify, export, or permanently delete any personal information associated with your cloud account. To execute a deletion request, email <code className="text-foreground">privacy@shadowflow.dev</code>.
+                You retain full statutory rights to access, rectify, export, or permanently delete any personal information associated with your cloud account. To execute a deletion request, email <code className="text-foreground">privacy@shadowflow.work</code>.
               </p>
             </section>
           </div>

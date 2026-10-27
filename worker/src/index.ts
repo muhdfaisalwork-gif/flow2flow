@@ -1,6 +1,7 @@
 export interface Env {
   ENVIRONMENT: string;
   APP_NAME: string;
+  PAGES_ORIGIN?: string;
   AI?: {
     run: (model: string, input: Record<string, unknown>) => Promise<any>;
   };
@@ -40,6 +41,7 @@ function jsonResponse(data: unknown, status = 200, request?: Request): Response 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const isApiHost = url.hostname.startsWith('api.') || url.hostname.endsWith('.workers.dev');
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
@@ -49,11 +51,16 @@ export default {
       });
     }
 
-    // Health check endpoint
-    if (url.pathname === '/' || url.pathname === '/health' || url.pathname === '/api/health') {
+    // Health check endpoint (always accessible at /health or /api/health, or / on api.* host)
+    if (
+      url.pathname === '/health' ||
+      url.pathname === '/api/health' ||
+      (isApiHost && url.pathname === '/')
+    ) {
       return jsonResponse({
         status: 'ok',
         service: 'Shadow Flow Worker & Automation Engine',
+        domain: 'shadowflow.work',
         environment: env.ENVIRONMENT || 'production',
         timestamp: new Date().toISOString(),
         version: '1.0.0',
@@ -128,7 +135,6 @@ export default {
           }, 200, request);
         }
 
-        // Fallback when Workers AI binding is not enabled
         return jsonResponse({
           success: true,
           prompt,
@@ -163,6 +169,35 @@ export default {
       }
     }
 
-    return jsonResponse({ error: 'Not Found', path: url.pathname }, 404, request);
+    // If on api.* subdomain and route not matched, return 404 JSON
+    if (isApiHost) {
+      return jsonResponse({ error: 'API Endpoint Not Found', path: url.pathname }, 404, request);
+    }
+
+    // Otherwise, serve the Shadow Flow frontend from Cloudflare Pages origin
+    const pagesOrigin = env.PAGES_ORIGIN || 'https://shadowflow-kdy.pages.dev';
+    const targetUrl = new URL(url.pathname + url.search, pagesOrigin);
+
+    const originRes = await fetch(targetUrl.toString(), {
+      method: request.method,
+      headers: request.headers,
+      redirect: 'follow',
+    });
+
+    // SPA Fallback: if route has no file extension and returned 404, serve /index.html
+    const hasExtension = /\.[a-zA-Z0-9]{1,8}$/.test(url.pathname);
+    if (originRes.status === 404 && !hasExtension) {
+      const indexUrl = new URL('/index.html', pagesOrigin);
+      const indexRes = await fetch(indexUrl.toString());
+      return new Response(indexRes.body, {
+        status: 200,
+        headers: indexRes.headers,
+      });
+    }
+
+    return new Response(originRes.body, {
+      status: originRes.status,
+      headers: originRes.headers,
+    });
   },
 };

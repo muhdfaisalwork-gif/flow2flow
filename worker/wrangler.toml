@@ -2,9 +2,15 @@ name = "shadowflow-worker"
 main = "src/index.ts"
 compatibility_date = "2024-10-01"
 
+routes = [
+  { pattern = "shadowflow.work/*", zone_id = "8b9009e9c3ba569d835757ebd23c24d3" },
+  { pattern = "www.shadowflow.work/*", zone_id = "8b9009e9c3ba569d835757ebd23c24d3" }
+]
+
 [vars]
 ENVIRONMENT = "production"
 APP_NAME = "Shadow Flow Worker & Automation Engine"
+PAGES_ORIGIN = "https://shadowflow-kdy.pages.dev"
 
 [ai]
 binding = "AI"

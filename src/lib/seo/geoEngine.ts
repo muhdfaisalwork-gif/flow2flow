@@ -247,7 +247,7 @@ export function generateLlmsTxt(siteConfig: {
   url?: string;
   corePages: Array<{ title: string; path: string; summary: string }>;
 }): string {
-  const { siteName, description, url = 'https://shadowflow.dev', corePages } = siteConfig;
+  const { siteName, description, url = 'https://shadowflow.work', corePages } = siteConfig;
 
   let out = `# ${siteName}\n\n`;
   out += `> ${description}\n\n`;
@@ -372,7 +372,7 @@ export function generateContentBrief(topic: string, primaryKeyword: string): Con
 export function getAiShareOfVoiceData(): AiShareOfVoiceRow[] {
   return [
     {
-      domain: 'shadowflow.dev',
+      domain: 'shadowflow.work',
       brand: 'Shadow Flow',
       googleAiOverview: 34.2,
       chatGpt: 38.6,

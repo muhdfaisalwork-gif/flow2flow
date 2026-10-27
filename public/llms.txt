@@ -1,0 +1,24 @@
+# Shadow Flow
+
+> Apache 2.0 open-source visual workflow engine for deterministic AI agents, Model Context Protocol (MCP), n8n workflow compatibility, and sandboxed WebAssembly runtimes.
+
+## Documentation & Core Capabilities
+
+- [Visual DAG Canvas](https://shadowflow.work/features): Graph-based canvas with multi-model routing, conditional branches, and sub-20ms node execution.
+- [Universal Integrations](https://shadowflow.work/integrations): Connects 50+ REST APIs, Model Context Protocol (MCP) servers, databases, and webhook listeners.
+- [Documentation & Quickstart](https://shadowflow.work/docs): Self-host via Docker, npm, or cloud runtimes with zero telemetry.
+- [Interactive Canvas Demo](https://shadowflow.work/demo): Test live DAG execution in browser with instant topological layout.
+- [AI SEO Studio & Content Engine](https://shadowflow.work/seo-agent): Built-in GEO citability auditor, SE Ranking content brief generator, and 82-rule humanizer.
+- [API Reference](https://shadowflow.work/api-reference): Full OpenAPI specs for webhook triggers and workflow execution contracts.
+
+## Technical Engineering Blog
+
+- [Deploying DeepSeek Reasoner in Enterprise AI Automation](https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation): Architectural analysis of running DeepSeek-R1 for multi-step reasoning at one-tenth standard API cost.
+- [Model Context Protocol (MCP) vs Function Calling](https://shadowflow.work/blog/mcp-vs-function-calling-architecture): Benchmarks and state management patterns for tool-augmented AI workflows.
+- [Why Self-Hosted AI Workflows Beat SaaS Lock-in](https://shadowflow.work/blog/self-hosted-ai-workflows-vs-saas): Latency, cost, and compliance comparisons between self-hosted engines and cloud-only automation platforms.
+
+## AI Search & MCP Integration
+
+- [Model Context Protocol](https://shadowflow.work/docs#mcp): Connect visual workflows directly to MCP tools.
+- [API Reference](https://shadowflow.work/api-reference): REST API endpoints and webhook delivery contracts.
+- [License](https://shadowflow.work/license): Apache 2.0 open-source license.

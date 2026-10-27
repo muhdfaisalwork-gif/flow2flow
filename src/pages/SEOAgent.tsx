@@ -104,7 +104,7 @@ export default function SEOAgent() {
   const llmsTxtContent = generateLlmsTxt({
     siteName: "Shadow Flow",
     description: "Apache 2.0 open-source visual workflow engine for deterministic AI agents, MCP protocol, and high-performance WebAssembly runtimes.",
-    url: "https://shadowflow.dev",
+    url: "https://shadowflow.work",
     corePages: [
       { title: "Visual DAG Canvas", path: "/features", summary: "Graph-based canvas with multi-model routing, conditional branches, and sub-20ms node execution." },
       { title: "Universal Integrations", path: "/integrations", summary: "Connects 50+ REST APIs, Model Context Protocol (MCP) servers, databases, and webhook listeners." },
@@ -1222,7 +1222,7 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                                 const schema = generateTechArticleSchema(
                                   auditTitle,
                                   "Comprehensive technical guide",
-                                  "https://shadowflow.dev/blog/deepseek",
+                                  "https://shadowflow.work/blog/deepseek",
                                   "2026-10-27"
                                 );
                                 navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
@@ -1239,7 +1239,7 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                               generateTechArticleSchema(
                                 auditTitle,
                                 "Technical article for automated workflows",
-                                "https://shadowflow.dev/blog/sample",
+                                "https://shadowflow.work/blog/sample",
                                 "2026-10-27"
                               ),
                               null,
@@ -1663,14 +1663,14 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                           <tr
                             key={row.domain}
                             className={`hover:bg-muted/40 transition-colors ${
-                              row.domain === "shadowflow.dev" ? "bg-primary/5 font-semibold" : ""
+                              row.domain === "shadowflow.work" ? "bg-primary/5 font-semibold" : ""
                             }`}
                           >
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-foreground">{row.brand}</span>
                                 <span className="text-[11px] text-muted-foreground font-mono">({row.domain})</span>
-                                {row.domain === "shadowflow.dev" && (
+                                {row.domain === "shadowflow.work" && (
                                   <Badge variant="secondary" className="text-[9px] bg-primary/20 text-primary">
                                     Your Site
                                   </Badge>

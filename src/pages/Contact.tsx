@@ -55,15 +55,15 @@ export default function Contact() {
     {
       title: "Enterprise Solutions",
       desc: "Tailored deployment architectures, private SLAs, and on-premises consulting.",
-      action: "enterprise@shadowflow.dev",
-      href: "mailto:enterprise@shadowflow.dev",
+      action: "enterprise@shadowflow.work",
+      href: "mailto:enterprise@shadowflow.work",
       icon: Building,
     },
     {
       title: "Security & Vulnerability Disclosure",
       desc: "Coordinated vulnerability disclosures and PGP-encrypted security reports.",
-      action: "security@shadowflow.dev",
-      href: "mailto:security@shadowflow.dev",
+      action: "security@shadowflow.work",
+      href: "mailto:security@shadowflow.work",
       icon: ShieldAlert,
     },
   ];

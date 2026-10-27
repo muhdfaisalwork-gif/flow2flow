@@ -62,7 +62,7 @@ const Settings: FC = () => {
 
   const activeUser = user || {
     id: 'demo-user-001',
-    email: 'demo@shadowflow.dev',
+    email: 'demo@shadowflow.work',
     display_name: 'Demo User',
     created_at: '2026-01-01T00:00:00Z',
   };

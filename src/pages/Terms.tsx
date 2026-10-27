@@ -66,7 +66,7 @@ export default function Terms() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-foreground">6. Contact Information</h2>
               <p>
-                For questions regarding these Terms of Service, please contact our legal team at <code className="text-foreground">legal@shadowflow.dev</code>.
+                For questions regarding these Terms of Service, please contact our legal team at <code className="text-foreground">legal@shadowflow.work</code>.
               </p>
             </section>
           </div>

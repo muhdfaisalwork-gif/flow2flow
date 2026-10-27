@@ -56,7 +56,7 @@ Teams run the model locally using Ollama with an average latency of 18ms.
     it('computes AI Search Share of Voice matrix across 5 engines', () => {
       const matrix = getAiShareOfVoiceData();
       expect(matrix.length).toBeGreaterThanOrEqual(4);
-      const shadowFlowRow = matrix.find(r => r.domain === 'shadowflow.dev');
+      const shadowFlowRow = matrix.find(r => r.domain === 'shadowflow.work');
       expect(shadowFlowRow).toBeDefined();
       expect(shadowFlowRow?.googleAiOverview).toBeGreaterThan(0);
       expect(shadowFlowRow?.chatGpt).toBeGreaterThan(0);
@@ -142,7 +142,7 @@ Teams run the model locally using Ollama with an average latency of 18ms.
       const schema = generateTechArticleSchema(
         'Guide to MCP Protocol',
         'In-depth guide to Model Context Protocol',
-        'https://shadowflow.dev/blog/mcp',
+        'https://shadowflow.work/blog/mcp',
         '2026-10-27'
       );
       expect(schema['@context']).toBe('https://schema.org');
