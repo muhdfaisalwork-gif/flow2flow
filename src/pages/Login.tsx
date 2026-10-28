@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Login: FC = () => {
   const [email, setEmail] = useState('');
@@ -73,13 +74,16 @@ const Login: FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative w-full max-w-md"
       >
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to home
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to home
+          </Link>
+          <ThemeToggle />
+        </div>
 
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="text-center">

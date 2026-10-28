@@ -1,8 +1,9 @@
 import { type FC, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Zap, Plus, Trash2, Key, Loader2, CreditCard, Sparkles } from 'lucide-react';
+import { ArrowLeft, User, Zap, Plus, Trash2, Key, Loader2, CreditCard, Sparkles, Sun, Moon, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useTheme } from '@/contexts/ThemeContext';
 import { TFASettings } from '@/components/settings/TFASettings';
 import {
   SAAS_PLANS,
@@ -34,8 +35,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -48,6 +47,7 @@ interface Credential {
 
 const Settings: FC = () => {
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [credentials, setCredentials] = useState<Credential[]>([]);
@@ -325,6 +325,38 @@ const Settings: FC = () => {
                     Member since {new Date(activeUser.created_at || Date.now()).toLocaleDateString()}
                   </p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Appearance & Theme */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>Choose between dark and light interface themes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant={theme === 'dark' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTheme('dark')}
+                  className="gap-2"
+                >
+                  <Moon className="w-4 h-4" />
+                  Dark Mode
+                </Button>
+                <Button
+                  type="button"
+                  variant={theme === 'light' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTheme('light')}
+                  className="gap-2"
+                >
+                  <Sun className="w-4 h-4" />
+                  Light Mode
+                </Button>
               </div>
             </CardContent>
           </Card>

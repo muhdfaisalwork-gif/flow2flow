@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import type { WorkflowNode, WorkflowEdge } from '@/types/workflow';
 
 interface SharedWorkflowData {
@@ -154,15 +155,18 @@ const SharedWorkflow: FC = () => {
             <span className="font-bold text-lg">Shadow Flow</span>
           </Link>
 
-          {user ? (
-            <Link to="/dashboard">
-              <Button variant="outline">Go to Dashboard</Button>
-            </Link>
-          ) : (
-            <Link to="/login">
-              <Button>Sign In</Button>
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {user ? (
+              <Link to="/dashboard">
+                <Button variant="outline">Go to Dashboard</Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button>Sign In</Button>
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 

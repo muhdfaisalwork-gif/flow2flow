@@ -39,8 +39,9 @@ import { useUIStore } from '@/stores/uiStore';
 import { useWorkflowStore } from '@/lib/store';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   exportWorkflow,
   importWorkflow,
@@ -82,6 +83,7 @@ const Navbar: FC<NavbarProps> = ({
   } = useWorkflowStore();
   const { handleUndo, handleRedo, canUndo, canRedo } = useUndoRedo();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localImportOpen, setLocalImportOpen] = useState(false);
@@ -223,6 +225,8 @@ const Navbar: FC<NavbarProps> = ({
           </div>
 
           <div className="flex items-center gap-1">
+            <ThemeToggle />
+
             <Button
               variant="ghost"
               size="icon"
@@ -256,7 +260,7 @@ const Navbar: FC<NavbarProps> = ({
                   Save {isDirty && '•'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={toggleSettings}>
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
@@ -442,6 +446,8 @@ const Navbar: FC<NavbarProps> = ({
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             AI Copilot
           </Button>
+
+          <ThemeToggle />
 
           <Separator orientation="vertical" className="h-6" />
 
