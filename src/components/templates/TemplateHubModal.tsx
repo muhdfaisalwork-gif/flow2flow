@@ -1,4 +1,4 @@
-import { type FC, useState, useMemo } from 'react';
+import { type FC, useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -76,6 +76,16 @@ const TemplateHubModal: FC<TemplateHubModalProps> = ({
     });
   }, [isOpen, searchQuery, selectedCategory]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleCloneTemplate = (template: WorkflowTemplate) => {
@@ -128,7 +138,7 @@ const TemplateHubModal: FC<TemplateHubModalProps> = ({
                   Powered by awesome-n8n-templates & n8n-free-templates • 1-click clone to canvas with topological layout
                 </p>
               </div>
-              <Button variant="ghost" size="icon" onClick={onClose}>
+              <Button variant="ghost" size="icon" aria-label="Close templates" onClick={onClose} className="h-8 w-8 hover:bg-muted/80 z-20">
                 <X className="h-5 w-5" />
               </Button>
             </div>
