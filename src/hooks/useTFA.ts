@@ -15,6 +15,13 @@ export function useTFA() {
       return;
     }
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id);
+    if (!isUuid) {
+      setSettings(null);
+      setIsLoading(false);
+      return;
+    }
+
     // Use the safe view to avoid exposing sensitive fields (totp_secret, backup_codes, phone_number)
     const { data, error } = await supabase
       .from('user_tfa_settings_safe' as 'user_tfa_settings')

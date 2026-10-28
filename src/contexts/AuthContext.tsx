@@ -146,8 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
         });
         if (!error && data?.user) {
-          // Sync account to D1 edge database in background
-          d1Api.signUp(email, password, data.user.user_metadata?.display_name || email.split('@')[0])
+          // Sync account to D1 edge database in background with exact UUID
+          d1Api.signUp(email, password, data.user.user_metadata?.display_name || email.split('@')[0], data.user.id)
             .catch(() => {});
         }
         return { error };

@@ -254,7 +254,9 @@ export default {
         }
 
         const { hash, salt } = await hashPassword(password);
-        const userId = `usr_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const userId = ((body as { id?: string }).id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test((body as { id?: string }).id!))
+          ? (body as { id?: string }).id!
+          : crypto.randomUUID();
         const now = new Date().toISOString();
 
         await env.DB.prepare(

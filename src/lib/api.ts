@@ -96,10 +96,10 @@ export const d1Api = {
   request: apiFetch,
 
   // Auth methods
-  async signUp(email: string, password: string, displayName?: string): Promise<{ user: User; token: string }> {
+  async signUp(email: string, password: string, displayName?: string, id?: string): Promise<{ user: User; token: string }> {
     const data = await apiFetch<{ success: boolean; user: User; token: string }>('/api/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, displayName }),
+      body: JSON.stringify({ email, password, displayName, id }),
     });
     setAuthToken(data.token, data.user);
     return data;
