@@ -255,31 +255,34 @@ async function callGroqAI(
   env: Env
 ): Promise<{ content: string; model: string }> {
   if (env.GROQ_API_KEY) {
-    try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'qwen/qwen3.8-27b',
-          messages,
-          response_format: isJson ? { type: 'json_object' } : undefined,
-          temperature: 0.2,
-          max_tokens: 2048,
-        }),
-      });
+    const candidateModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
+    for (const model of candidateModels) {
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            response_format: isJson ? { type: 'json_object' } : undefined,
+            temperature: 0.2,
+            max_tokens: 2048,
+          }),
+        });
 
-      if (response.ok) {
-        const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          return { content, model: 'Groq (qwen/qwen3.8-27b)' };
+        if (response.ok) {
+          const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            return { content, model: `Groq (${model})` };
+          }
         }
+      } catch (e) {
+        console.error(`Groq model ${model} error, trying next:`, e);
       }
-    } catch (e) {
-      console.error('Groq call error, falling back:', e);
     }
   }
 

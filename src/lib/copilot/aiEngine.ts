@@ -10,6 +10,7 @@ import {
   resolveN8nNodeMeta,
   parseN8nWorkflow,
   type RawN8nWorkflow,
+  type N8nImportResult,
 } from '@/lib/importer/n8nAdapter';
 
 export type CopilotProvider =
@@ -75,9 +76,9 @@ export const COPILOT_MODELS: Record<CopilotProvider, { label: string; defaultMod
     requiresKey: true,
   },
   groq: {
-    label: 'Groq LPU (Llama 3.3 70B)',
-    defaultModel: 'llama-3.3-70b-versatile',
-    requiresKey: true,
+    label: 'Groq LPU (Qwen 3.8 27B / Built-in)',
+    defaultModel: 'qwen/qwen3.8-27b',
+    requiresKey: false,
   },
   ollama: {
     label: 'Local Ollama (Gemma 4)',
@@ -960,7 +961,8 @@ export async function synthesizeWorkflowWithAI(
   try {
     let rawJsonText = '';
 
-    if (config.provider === 'builtin') {
+    const isBuiltinOrGroqWithoutKey = config.provider === 'builtin' || (config.provider === 'groq' && !config.apiKey);
+    if (isBuiltinOrGroqWithoutKey) {
       const endpoint = 'https://shadowflow.work/api/copilot/chat';
       const authToken = typeof window !== 'undefined' ? localStorage.getItem('shadowflow_auth_token') : null;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -1015,7 +1017,7 @@ export async function synthesizeWorkflowWithAI(
           Authorization: `Bearer ${config.apiKey}`,
         },
         body: JSON.stringify({
-          model: config.model || COPILOT_MODELS[config.provider].defaultModel,
+          model: config.model || (config.provider === 'groq' ? 'qwen/qwen3.8-27b' : COPILOT_MODELS[config.provider].defaultModel),
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: systemInstruction },
@@ -1064,25 +1066,59 @@ export async function synthesizeWorkflowWithAI(
     }
 
     const cleanedJson = rawJsonText.replace(/^```json\s*|\s*```$/g, '').trim();
-    const parsedN8n = parseN8nWorkflow(JSON.parse(cleanedJson) as RawN8nWorkflow, {
-      forceAutoLayout: true,
-    });
+    let parsedN8n: N8nImportResult;
+
+    try {
+      const jsonObj = JSON.parse(cleanedJson);
+      if (jsonObj && Array.isArray(jsonObj.nodes)) {
+        parsedN8n = parseN8nWorkflow(jsonObj as RawN8nWorkflow, { forceAutoLayout: true });
+      } else {
+        const fallback = synthesizeWorkflowHeuristic(prompt, existingNodes, existingEdges);
+        return {
+          name: jsonObj.name || 'AI Synthesized Workflow',
+          explanation: jsonObj.description || rawJsonText || fallback.explanation,
+          nodes: fallback.nodes,
+          edges: fallback.edges,
+          repairedIssues: fallback.repairedIssues,
+          modeUsed: config.provider,
+        };
+      }
+    } catch {
+      if (rawJsonText && rawJsonText.trim().length > 15) {
+        const fallback = synthesizeWorkflowHeuristic(prompt, existingNodes, existingEdges);
+        return {
+          name: 'AI Generated Workflow',
+          explanation: rawJsonText,
+          nodes: fallback.nodes,
+          edges: fallback.edges,
+          repairedIssues: fallback.repairedIssues,
+          modeUsed: config.provider,
+        };
+      }
+      throw new Error('AI response did not contain recognizable workflow JSON');
+    }
+
     const repaired = validateAndRepairWorkflow(parsedN8n.nodes, parsedN8n.edges);
+    const stepList = repaired.nodes.map((n, i) => `${i + 1}. **${n.data.label}** (\`${n.data.flowType}\`)`).join('\n');
+    const fullExplanation = parsedN8n.description
+      ? `${parsedN8n.description}\n\n**Pipeline Architecture:**\n${stepList}`
+      : `Generated ${repaired.nodes.length} nodes with topological auto-layout:\n\n${stepList}`;
 
     return {
-      name: parsedN8n.name,
-      explanation: parsedN8n.description || `Generated ${repaired.nodes.length} nodes via ${COPILOT_MODELS[config.provider].label}.`,
+      name: parsedN8n.name || 'Lead Generation Workflow',
+      explanation: fullExplanation,
       nodes: repaired.nodes,
       edges: repaired.edges,
       repairedIssues: repaired.repairsApplied,
       modeUsed: config.provider,
     };
-  } catch {
-    // Graceful self-healing fallback to the offline Heuristic Engine
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.warn(`Copilot AI synthesis (${config.provider}) fell back to heuristic:`, errorMsg);
     const fallback = synthesizeWorkflowHeuristic(prompt, existingNodes, existingEdges);
     return {
       ...fallback,
-      explanation: `${fallback.explanation} *(Synthesized via resilient Heuristic fallback)*`,
+      explanation: `${fallback.explanation}\n\n*(Note: AI call notice: ${errorMsg}. Fallback topology generated).*`,
     };
   }
 }
