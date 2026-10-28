@@ -21,6 +21,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
+import { d1Api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import RunHistory from '@/components/dashboard/RunHistory';
 import { DemoBanner } from '@/components/demo/DemoBanner';
@@ -62,6 +63,20 @@ const Dashboard: FC = () => {
   const fetchWorkflows = async () => {
     if (!user) return;
     setIsLoading(true);
+
+    if (d1Api.getToken()) {
+      try {
+        const d1Workflows = await d1Api.getWorkflows();
+        setWorkflows(d1Workflows as unknown as WorkflowFromDB[]);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast({ variant: 'destructive', title: 'Error loading workflows', description: msg });
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     const { data, error } = await supabase
       .from('workflows')
       .select('id, name, description, is_active, updated_at, nodes')
@@ -85,6 +100,19 @@ const Dashboard: FC = () => {
       toast({ title: 'Demo mode', description: 'Sign up to manage workflows.' });
       return;
     }
+
+    if (d1Api.getToken()) {
+      try {
+        await d1Api.deleteWorkflow(id);
+        toast({ title: 'Workflow deleted', description: 'The workflow has been removed from Cloudflare D1.' });
+        fetchWorkflows();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast({ variant: 'destructive', title: 'Error deleting workflow', description: msg });
+      }
+      return;
+    }
+
     const { error } = await supabase.from('workflows').delete().eq('id', id);
     if (error) {
       toast({ variant: 'destructive', title: 'Error deleting workflow', description: error.message });

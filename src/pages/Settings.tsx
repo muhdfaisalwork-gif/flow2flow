@@ -13,6 +13,7 @@ import {
   type PlanTier,
 } from '@/lib/billing/subscription';
 import { useAuth } from '@/contexts/AuthContext';
+import { d1Api } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,6 +98,16 @@ const Settings: FC = () => {
 
   const fetchCredentials = async () => {
     setIsLoadingCreds(true);
+    if (d1Api.getToken()) {
+      try {
+        const d1Creds = await d1Api.getCredentials();
+        setCredentials(d1Creds.map(c => ({ id: c.id, name: c.name, type: c.provider, created_at: c.created_at })));
+        setIsLoadingCreds(false);
+        return;
+      } catch {
+        // fallback
+      }
+    }
     if (user) {
       const { data, error } = await supabase
         .from('user_credentials')
@@ -158,6 +169,24 @@ const Settings: FC = () => {
     if (!newCredName.trim() || !newCredValue.trim()) return;
     setIsSaving(true);
 
+    if (d1Api.getToken()) {
+      try {
+        await d1Api.saveCredential(newCredType, newCredName.trim(), { value: newCredValue });
+        toast({ title: 'Credential added' });
+        setNewCredName('');
+        setNewCredValue('');
+        setShowAddCred(false);
+        setIsSaving(false);
+        fetchCredentials();
+        return;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast({ variant: 'destructive', title: 'Error', description: msg });
+        setIsSaving(false);
+        return;
+      }
+    }
+
     if (user) {
       const { error } = await supabase.from('user_credentials').insert({
         user_id: user.id,
@@ -196,6 +225,18 @@ const Settings: FC = () => {
   };
 
   const handleDeleteCredential = async (id: string) => {
+    if (d1Api.getToken()) {
+      try {
+        await d1Api.deleteCredential(id);
+        toast({ title: 'Credential deleted' });
+        fetchCredentials();
+        return;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast({ variant: 'destructive', title: 'Error', description: msg });
+        return;
+      }
+    }
     if (user) {
       const { error } = await supabase.from('user_credentials').delete().eq('id', id);
       if (error) {

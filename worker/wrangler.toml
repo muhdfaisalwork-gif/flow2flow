@@ -11,6 +11,12 @@ routes = [
 ENVIRONMENT = "production"
 APP_NAME = "Shadow Flow Worker & Automation Engine"
 PAGES_ORIGIN = "https://shadowflow-kdy.pages.dev"
+JWT_SECRET = "shadowflow-production-jwt-edge-key-2026-secure"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "shadowflow-db"
+database_id = "657e22e6-1a20-426c-8d4a-1c4ee54f803c"
 
 [ai]
 binding = "AI"

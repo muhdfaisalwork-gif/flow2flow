@@ -156,7 +156,9 @@ export default function Blog() {
                     <div className="w-16 h-16 rounded-2xl bg-primary/20 border border-primary/40 flex items-center justify-center mx-auto mb-4">
                       <BookOpen className="w-8 h-8 text-primary" />
                     </div>
-                    <div className="font-semibold text-foreground text-sm">{featuredPost.author}</div>
+                    <div className="font-semibold text-foreground text-sm">
+                      {typeof featuredPost.author === 'object' ? featuredPost.author?.name : featuredPost.author}
+                    </div>
                     <div className="text-xs text-muted-foreground">{featuredPost.authorRole}</div>
                     <div className="mt-4 pt-4 border-t border-border/60 text-xs text-muted-foreground">
                       Structured for AI citations, Perplexity discovery, and technical engineering teams.

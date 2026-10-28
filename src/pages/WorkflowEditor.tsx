@@ -7,6 +7,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
+import { d1Api } from '@/lib/api';
 import FlowCanvas from '@/components/workflow/Canvas/FlowCanvas';
 import NodeLibrary from '@/components/workflow/Sidebar/NodeLibrary';
 import NodeConfigPanel from '@/components/workflow/Panel/NodeConfigPanel';
@@ -78,14 +79,55 @@ const WorkflowEditor: FC = () => {
       setIsPublic(false);
     } else {
       // Load existing workflow
-      const { data, error } = await supabase
-        .from('workflows')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .single();
+      interface LoadedWorkflow {
+        id: string;
+        name: string;
+        description?: string | null;
+        nodes?: unknown;
+        edges?: unknown;
+        settings?: unknown;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+        share_token?: string | null;
+        is_public?: boolean;
+      }
 
-      if (error || !data) {
+      let data: LoadedWorkflow | null = null;
+      if (d1Api.getToken()) {
+        try {
+          const d1Wf = await d1Api.getWorkflow(id);
+          data = {
+            id: d1Wf.id,
+            name: d1Wf.name,
+            description: d1Wf.description,
+            nodes: d1Wf.nodes,
+            edges: d1Wf.edges,
+            settings: d1Wf.settings,
+            is_active: d1Wf.is_active,
+            created_at: d1Wf.created_at,
+            updated_at: d1Wf.updated_at,
+            share_token: null,
+            is_public: false,
+          };
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!data) {
+        const { data: sbData } = await supabase
+          .from('workflows')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
+        if (sbData) {
+          data = sbData as LoadedWorkflow;
+        }
+      }
+
+      if (!data) {
         toast({
           variant: 'destructive',
           title: 'Workflow not found',
@@ -161,6 +203,37 @@ const WorkflowEditor: FC = () => {
     if (!user || !workflow) return;
 
     try {
+      if (d1Api.getToken()) {
+        if (workflowId) {
+          await d1Api.updateWorkflow(workflowId, {
+            name: workflow.name,
+            description: workflow.description,
+            nodes: JSON.parse(JSON.stringify(nodes)),
+            edges: JSON.parse(JSON.stringify(edges)),
+            settings: JSON.parse(JSON.stringify(workflow.settings)),
+            is_active: workflow.isActive,
+            change_summary: `Saved at ${new Date().toLocaleTimeString()}`,
+          });
+        } else {
+          const created = await d1Api.createWorkflow({
+            name: workflow.name,
+            description: workflow.description,
+            nodes: JSON.parse(JSON.stringify(nodes)),
+            edges: JSON.parse(JSON.stringify(edges)),
+            settings: JSON.parse(JSON.stringify(workflow.settings)),
+            is_active: workflow.isActive,
+          });
+          setWorkflowId(created.id);
+          window.history.replaceState(null, '', `/workflow/${created.id}`);
+        }
+        markClean();
+        toast({
+          title: 'Workflow saved',
+          description: `${workflow.name} has been saved successfully to Cloudflare D1.`,
+        });
+        return;
+      }
+
       if (workflowId) {
         // Update existing workflow
         const { error } = await supabase

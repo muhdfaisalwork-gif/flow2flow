@@ -238,7 +238,9 @@ export default function BlogPost() {
                   <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-foreground">{post.author}</div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {typeof post.author === 'object' ? post.author?.name : post.author}
+                  </div>
                   <div className="text-xs text-muted-foreground">{post.authorRole}</div>
                 </div>
               </div>
