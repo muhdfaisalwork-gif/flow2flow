@@ -201,10 +201,13 @@ const Dashboard: FC = () => {
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg font-bold flex items-center gap-2">
+                <h2 className="text-lg font-bold flex items-center gap-2 flex-wrap">
                   Build Workflow with AI Chat
                   <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-primary/40 text-primary bg-primary/10">
                     Copilot
+                  </Badge>
+                  <Badge className="text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30 font-normal">
+                    Built-in Groq AI (20 Free / 100 Pro / Unlimited Max)
                   </Badge>
                 </h2>
                 <p className="text-xs text-muted-foreground">

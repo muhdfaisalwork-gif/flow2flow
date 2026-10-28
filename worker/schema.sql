@@ -71,3 +71,21 @@ CREATE TABLE IF NOT EXISTS user_credentials (
 );
 
 CREATE INDEX IF NOT EXISTS idx_credentials_user_id ON user_credentials(user_id);
+
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+  user_id TEXT PRIMARY KEY,
+  plan TEXT NOT NULL DEFAULT 'free', -- 'free', 'pro', 'max'
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  request_date TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(user_id, request_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_usage_user_date ON ai_usage(user_id, request_date);

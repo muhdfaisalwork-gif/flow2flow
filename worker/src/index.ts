@@ -29,6 +29,7 @@ export interface Env {
   APP_NAME: string;
   PAGES_ORIGIN?: string;
   JWT_SECRET?: string;
+  GROQ_API_KEY?: string;
   DB: D1Database;
   AI?: {
     run: (model: string, input: Record<string, unknown>) => Promise<unknown>;
@@ -192,6 +193,110 @@ async function getAuthUser(request: Request, env: Env): Promise<UserPayload | nu
   const token = authHeader.replace('Bearer ', '').trim();
   if (!env.JWT_SECRET) return null;
   return verifyJWT(token, env.JWT_SECRET);
+}
+
+async function getEffectiveUserId(request: Request, env: Env): Promise<{ userId: string; isAuthenticated: boolean }> {
+  const user = await getAuthUser(request, env);
+  if (user) {
+    return { userId: user.id, isAuthenticated: true };
+  }
+  const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'guest';
+  return { userId: `ip_${ip.replace(/[^a-zA-Z0-9_.-]/g, '_')}`, isAuthenticated: false };
+}
+
+async function getUserPlan(userId: string, env: Env): Promise<{ plan: string; limit: number }> {
+  if (userId.startsWith('ip_')) {
+    return { plan: 'free', limit: 20 };
+  }
+  try {
+    const sub = (await env.DB.prepare('SELECT plan FROM user_subscriptions WHERE user_id = ?').bind(userId).first()) as { plan: string } | null;
+    const plan = (sub?.plan || 'free').toLowerCase();
+    if (plan === 'pro') return { plan: 'pro', limit: 100 };
+    if (plan === 'max' || plan === 'enterprise') return { plan: 'max', limit: 999999 };
+    return { plan: 'free', limit: 20 };
+  } catch {
+    return { plan: 'free', limit: 20 };
+  }
+}
+
+async function checkAndIncrementUsage(
+  userId: string,
+  env: Env
+): Promise<{ allowed: boolean; plan: string; limit: number; used: number; remaining: number }> {
+  const { plan, limit } = await getUserPlan(userId, env);
+  const today = new Date().toISOString().slice(0, 10);
+
+  let currentUsage = 0;
+  try {
+    const row = (await env.DB.prepare('SELECT count FROM ai_usage WHERE user_id = ? AND request_date = ?').bind(userId, today).first()) as { count: number } | null;
+    currentUsage = row?.count || 0;
+  } catch {}
+
+  if (limit < 999999 && currentUsage >= limit) {
+    return { allowed: false, plan, limit, used: currentUsage, remaining: 0 };
+  }
+
+  // Increment usage
+  try {
+    const usageId = `${userId}_${today}`;
+    await env.DB.prepare(
+      'INSERT INTO ai_usage (id, user_id, request_date, count) VALUES (?, ?, ?, 1) ON CONFLICT(user_id, request_date) DO UPDATE SET count = count + 1'
+    ).bind(usageId, userId, today).run();
+  } catch {}
+
+  const nextUsed = currentUsage + 1;
+  const remaining = limit >= 999999 ? 999999 : Math.max(0, limit - nextUsed);
+  return { allowed: true, plan, limit, used: nextUsed, remaining };
+}
+
+async function callGroqAI(
+  messages: Array<{ role: string; content: string }>,
+  isJson: boolean,
+  env: Env
+): Promise<{ content: string; model: string }> {
+  if (env.GROQ_API_KEY) {
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'qwen/qwen3.8-27b',
+          messages,
+          response_format: isJson ? { type: 'json_object' } : undefined,
+          temperature: 0.2,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          return { content, model: 'Groq (qwen/qwen3.8-27b)' };
+        }
+      }
+    } catch (e) {
+      console.error('Groq call error, falling back:', e);
+    }
+  }
+
+  // Fallback to Cloudflare Workers AI if available
+  if (env.AI) {
+    try {
+      const aiResponse = (await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages,
+        max_tokens: 1024,
+      })) as { response?: string };
+      return { content: aiResponse.response || JSON.stringify(aiResponse), model: 'Cloudflare Workers AI (@cf/meta/llama-3.1-8b-instruct)' };
+    } catch (e) {
+      console.error('Cloudflare AI fallback error:', e);
+    }
+  }
+
+  throw new Error('AI engine service currently unavailable');
 }
 
 // ----------------------------------------------------------------------------
@@ -663,7 +768,104 @@ export default {
       );
     }
 
-    // AI Prompt-to-Flow generation endpoint using Cloudflare Workers AI
+    // GET /api/copilot/usage - Check daily AI usage and quota by plan
+    if (url.pathname === '/api/copilot/usage' && request.method === 'GET') {
+      try {
+        const { userId, isAuthenticated } = await getEffectiveUserId(request, env);
+        const { plan, limit } = await getUserPlan(userId, env);
+        const today = new Date().toISOString().slice(0, 10);
+        let used = 0;
+        try {
+          const row = (await env.DB.prepare('SELECT count FROM ai_usage WHERE user_id = ? AND request_date = ?').bind(userId, today).first()) as { count: number } | null;
+          used = row?.count || 0;
+        } catch {}
+        const remaining = limit >= 999999 ? 999999 : Math.max(0, limit - used);
+        return jsonResponse(
+          {
+            plan,
+            limit: limit >= 999999 ? 'unlimited' : limit,
+            used,
+            remaining: limit >= 999999 ? 'unlimited' : remaining,
+            isAuthenticated,
+            resetTimeUtc: '00:00 UTC',
+          },
+          200,
+          request
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to retrieve AI usage', details: message }, 500, request);
+      }
+    }
+
+    // POST /api/copilot/chat - Built-in AI Copilot with Daily Quota (20 Free / 100 Pro / Unlimited Max)
+    if (url.pathname === '/api/copilot/chat' && request.method === 'POST') {
+      try {
+        const body = (await request.json()) as {
+          prompt?: string;
+          messages?: Array<{ role: string; content: string }>;
+          formatJson?: boolean;
+        };
+
+        const { userId } = await getEffectiveUserId(request, env);
+        const quota = await checkAndIncrementUsage(userId, env);
+
+        if (!quota.allowed) {
+          return jsonResponse(
+            {
+              error: `Daily AI limit reached (${quota.used}/${quota.limit} requests). Upgrade to Pro for 100 requests/day or Max for unlimited.`,
+              code: 'QUOTA_EXCEEDED',
+              plan: quota.plan,
+              limit: quota.limit,
+              used: quota.used,
+              remaining: 0,
+            },
+            429,
+            request
+          );
+        }
+
+        let messages = body.messages;
+        if (!messages && body.prompt) {
+          messages = [
+            {
+              role: 'system',
+              content:
+                'You are Shadow Flow Copilot, an expert AI workflow architect. Return concise, direct architectural guidance or valid JSON for workflow steps. No excessive conversational filler.',
+            },
+            { role: 'user', content: body.prompt },
+          ];
+        }
+
+        if (!messages || messages.length === 0) {
+          return jsonResponse({ error: 'Missing prompt or messages parameter' }, 400, request);
+        }
+
+        const isJson = Boolean(body.formatJson);
+        const { content, model } = await callGroqAI(messages, isJson, env);
+
+        return jsonResponse(
+          {
+            success: true,
+            content,
+            generatedBy: model,
+            usage: {
+              plan: quota.plan,
+              limit: quota.limit >= 999999 ? 'unlimited' : quota.limit,
+              used: quota.used,
+              remaining: quota.remaining >= 999999 ? 'unlimited' : quota.remaining,
+            },
+          },
+          200,
+          request
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Copilot generation failed', details: message }, 500, request);
+      }
+    }
+
+    // AI Prompt-to-Flow generation endpoint using Groq + Workers AI with Plan Quotas
     if (url.pathname === '/api/generate-flow' && request.method === 'POST') {
       try {
         const body = (await request.json()) as { prompt?: string };
@@ -673,50 +875,90 @@ export default {
           return jsonResponse({ error: 'Missing "prompt" parameter in request body' }, 400, request);
         }
 
-        if (env.AI) {
-          const aiResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-            messages: [
-              {
-                role: 'system',
-                content:
-                  'You are Shadow Flow Copilot. Return only a valid JSON array of workflow steps with {id, type, label, description, params}. No markdown fencing.',
-              },
-              {
-                role: 'user',
-                content: `Generate workflow steps for: ${prompt}`,
-              },
-            ],
-            max_tokens: 1024,
-          });
+        const { userId } = await getEffectiveUserId(request, env);
+        const quota = await checkAndIncrementUsage(userId, env);
+
+        if (!quota.allowed) {
+          return jsonResponse(
+            {
+              error: `Daily AI limit reached (${quota.used}/${quota.limit} requests). Upgrade to Pro for 100 requests/day or Max for unlimited.`,
+              code: 'QUOTA_EXCEEDED',
+              plan: quota.plan,
+              limit: quota.limit,
+              used: quota.used,
+              remaining: 0,
+            },
+            429,
+            request
+          );
+        }
+
+        const promptMessages = [
+          {
+            role: 'system',
+            content:
+              'You are Shadow Flow Copilot. Return ONLY a valid JSON array of workflow steps with keys: id, type, label, description, params. Valid types: webhook, ai-agent, mcp-tool, activepieces-action, transform, condition, slack, email. No markdown code blocks, return raw JSON array.',
+          },
+          {
+            role: 'user',
+            content: `Generate workflow steps for: ${prompt}`,
+          },
+        ];
+
+        try {
+          const { content, model } = await callGroqAI(promptMessages, true, env);
+          let parsedSteps: unknown;
+          try {
+            parsedSteps = JSON.parse(content);
+          } catch {
+            const jsonMatch = content.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+            if (jsonMatch) {
+              parsedSteps = JSON.parse(jsonMatch[0]);
+            } else {
+              parsedSteps = { rawOutput: content };
+            }
+          }
 
           return jsonResponse(
             {
               success: true,
               prompt,
-              result: aiResponse,
-              generatedBy: 'Cloudflare Workers AI (@cf/meta/llama-3.1-8b-instruct)',
+              result: parsedSteps,
+              generatedBy: model,
+              usage: {
+                plan: quota.plan,
+                limit: quota.limit >= 999999 ? 'unlimited' : quota.limit,
+                used: quota.used,
+                remaining: quota.remaining >= 999999 ? 'unlimited' : quota.remaining,
+              },
+            },
+            200,
+            request
+          );
+        } catch {
+          return jsonResponse(
+            {
+              success: true,
+              prompt,
+              result: {
+                steps: [
+                  { id: 'step_1', type: 'webhook', label: 'Webhook Trigger', description: 'Listens for incoming data' },
+                  { id: 'step_2', type: 'transform', label: 'Data Transformer', description: `Processes data for: ${prompt}` },
+                  { id: 'step_3', type: 'action', label: 'Output Dispatcher', description: 'Sends result to destination' },
+                ],
+              },
+              generatedBy: 'Shadow Flow Standard Template Engine',
+              usage: {
+                plan: quota.plan,
+                limit: quota.limit >= 999999 ? 'unlimited' : quota.limit,
+                used: quota.used,
+                remaining: quota.remaining >= 999999 ? 'unlimited' : quota.remaining,
+              },
             },
             200,
             request
           );
         }
-
-        return jsonResponse(
-          {
-            success: true,
-            prompt,
-            result: {
-              steps: [
-                { id: 'step_1', type: 'webhook', label: 'Webhook Trigger', description: 'Listens for incoming data' },
-                { id: 'step_2', type: 'transform', label: 'Data Transformer', description: `Processes data for: ${prompt}` },
-                { id: 'step_3', type: 'action', label: 'Output Dispatcher', description: 'Sends result to destination' },
-              ],
-            },
-            generatedBy: 'Shadow Flow Standard Template Engine',
-          },
-          200,
-          request
-        );
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         return jsonResponse({ error: 'Flow generation failed', details: message }, 500, request);

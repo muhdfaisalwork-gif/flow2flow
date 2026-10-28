@@ -13,6 +13,7 @@ import {
 } from '@/lib/importer/n8nAdapter';
 
 export type CopilotProvider =
+  | 'builtin'
   | 'heuristic'
   | 'openai'
   | 'anthropic'
@@ -48,6 +49,11 @@ export interface GraphValidationReport {
 }
 
 export const COPILOT_MODELS: Record<CopilotProvider, { label: string; defaultModel: string; requiresKey: boolean }> = {
+  builtin: {
+    label: 'Built-in Cloud AI (Groq LPU — Free 20/day, Pro 100/day, Max Unlimited)',
+    defaultModel: 'qwen/qwen3.8-27b',
+    requiresKey: false,
+  },
   heuristic: {
     label: 'Zero-Cost Heuristic Engine (Offline)',
     defaultModel: 'flow2flow-heuristic-v2',
@@ -954,7 +960,32 @@ export async function synthesizeWorkflowWithAI(
   try {
     let rawJsonText = '';
 
-    if (config.provider === 'ollama') {
+    if (config.provider === 'builtin') {
+      const endpoint = 'https://shadowflow.work/api/copilot/chat';
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('shadowflow_auth_token') : null;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          prompt: `${systemInstruction}\n\nUser request: ${prompt}`,
+          formatJson: true,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = (await res.json().catch(() => ({}))) as { error?: string };
+        if (res.status === 429) {
+          throw new Error(errData.error || 'Daily AI limit reached (20 requests/day on Free plan). Upgrade to Pro for 100/day or Max for unlimited.');
+        }
+        throw new Error(errData.error || `Built-in AI returned status ${res.status}`);
+      }
+
+      const data = (await res.json()) as { content?: string };
+      rawJsonText = data.content || '';
+    } else if (config.provider === 'ollama') {
       const baseUrl = (config.ollamaBaseUrl || 'http://localhost:11434').replace(/\/$/, '');
       const res = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',

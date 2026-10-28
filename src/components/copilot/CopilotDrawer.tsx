@@ -53,18 +53,35 @@ const PROMPT_SUGGESTIONS = [
 ];
 
 const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt }) => {
-  const [provider, setProvider] = useState<CopilotProvider>('heuristic');
+  const [provider, setProvider] = useState<CopilotProvider>('builtin');
   const [apiKey, setApiKey] = useState('');
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
   const [showKeyInput, setShowKeyInput] = useState(false);
+  const [quotaInfo, setQuotaInfo] = useState<{ plan: string; limit: number | string; used: number; remaining: number | string } | null>(null);
   const initialTriggerRef = useRef<string | null>(null);
+
+  const fetchQuota = async () => {
+    try {
+      const res = await fetch('https://shadowflow.work/api/copilot/usage');
+      if (res.ok) {
+        const data = (await res.json()) as { plan: string; limit: number | string; used: number; remaining: number | string };
+        setQuotaInfo(data);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchQuota();
+    }
+  }, [isOpen]);
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
       content:
-        "Hi! I'm your **Shadow Flow AI Copilot**.\n\n• **Zero-Cost Heuristic Mode**: Synthesizes and refactors multi-branch workflows 100% offline with zero API keys.\n• **BYOK Multi-Model**: Connect OpenAI (`GPT-4o`), Anthropic (`Claude 3.5 Sonnet`), Google `Gemini`, `Groq`, or local `Ollama`.\n• **Conversational Refactoring**: Try *\"Insert a filter node between step 1 and step 2\"* or *\"Switch model to Claude 3.5 Sonnet\"*.",
+        "Hi! I'm your **Shadow Flow AI Copilot**.\n\n• **Built-in Cloud AI**: Powered by Groq LPU (20 requests/day on Free, 100/day on Pro, unlimited on Max) with zero API keys needed!\n• **Zero-Cost Heuristic Mode**: Synthesizes and refactors multi-branch workflows 100% offline.\n• **BYOK & Local Ollama**: Connect OpenAI, Claude 3.5, Gemini, or local Ollama.\n• **Try Prompts**: *\"Stripe webhook to Slack channel alert\"* or *\"Connect to MCP server tool\"*.",
     },
   ]);
   const [input, setInput] = useState('');
@@ -163,6 +180,7 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
         title: '✨ Workflow Topology Synthesized',
         description: `Applied ${result.nodes.length} nodes and ${result.edges.length} connections to canvas.`,
       });
+      fetchQuota();
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Synthesis failed';
       setMessages((prev) => [
@@ -278,6 +296,20 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
                 placeholder="http://localhost:11434"
                 className="h-7 text-xs font-mono bg-background/80"
               />
+            </div>
+          )}
+
+          {provider === 'builtin' && quotaInfo && (
+            <div className="flex items-center justify-between px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[11px]">
+              <span className="text-emerald-400 font-medium flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Groq LPU Active (No Key Required)
+              </span>
+              <span className="font-mono text-muted-foreground text-[10px]">
+                {quotaInfo.remaining === 'unlimited'
+                  ? 'Unlimited (Max Plan)'
+                  : `${quotaInfo.remaining}/${quotaInfo.limit} left today (${quotaInfo.plan.toUpperCase()})`}
+              </span>
             </div>
           )}
         </div>
