@@ -190,8 +190,8 @@ async function getAuthUser(request: Request, env: Env): Promise<UserPayload | nu
   const authHeader = request.headers.get('Authorization') || '';
   if (!authHeader.startsWith('Bearer ')) return null;
   const token = authHeader.replace('Bearer ', '').trim();
-  const secret = env.JWT_SECRET || 'shadowflow-secret-fallback-key';
-  return verifyJWT(token, secret);
+  if (!env.JWT_SECRET) return null;
+  return verifyJWT(token, env.JWT_SECRET);
 }
 
 // ----------------------------------------------------------------------------
@@ -266,7 +266,10 @@ export default {
           .run();
 
         const user: UserPayload = { id: userId, email, display_name: displayName };
-        const token = await createJWT(user as unknown as Record<string, unknown>, env.JWT_SECRET || 'shadowflow-secret-fallback-key');
+        if (!env.JWT_SECRET) {
+          return jsonResponse({ error: 'Server auth configuration missing' }, 500, request);
+        }
+        const token = await createJWT(user as unknown as Record<string, unknown>, env.JWT_SECRET);
 
         return jsonResponse({ success: true, user, token }, 201, request);
       } catch (err: unknown) {
@@ -302,7 +305,10 @@ export default {
         }
 
         const user: UserPayload = { id: row.id, email: row.email, display_name: row.display_name };
-        const token = await createJWT(user as unknown as Record<string, unknown>, env.JWT_SECRET || 'shadowflow-secret-fallback-key');
+        if (!env.JWT_SECRET) {
+          return jsonResponse({ error: 'Server auth configuration missing' }, 500, request);
+        }
+        const token = await createJWT(user as unknown as Record<string, unknown>, env.JWT_SECRET);
 
         return jsonResponse({ success: true, user, token }, 200, request);
       } catch (err: unknown) {

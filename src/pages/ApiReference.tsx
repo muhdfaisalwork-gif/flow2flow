@@ -29,7 +29,7 @@ const endpoints: Endpoint[] = [
       { name: "sync", type: "boolean", required: false, desc: "If true, blocks until workflow execution finishes." },
     ],
     curlExample: `curl -X POST https://api.shadowflow.work/v1/workflows/wf_89a2b1/execute \\
-  -H "Authorization: Bearer sf_live_9f8d1c7a4" \\
+  -H "Authorization: Bearer <YOUR_API_KEY>" \\
   -H "Content-Type: application/json" \\
   -d '{
     "payload": {
@@ -60,7 +60,7 @@ const endpoints: Endpoint[] = [
       { name: "offset", type: "number", required: false, desc: "Pagination offset." },
     ],
     curlExample: `curl -X GET https://api.shadowflow.work/v1/workflows?limit=10 \\
-  -H "Authorization: Bearer sf_live_9f8d1c7a4"`,
+  -H "Authorization: Bearer <YOUR_API_KEY>"`,
     responseExample: `{
   "data": [
     {
@@ -84,7 +84,7 @@ const endpoints: Endpoint[] = [
       { name: "arguments", type: "object", required: true, desc: "Input arguments schema." },
     ],
     curlExample: `curl -X POST https://api.shadowflow.work/v1/mcp/invoke \\
-  -H "Authorization: Bearer sf_live_9f8d1c7a4" \\
+  -H "Authorization: Bearer <YOUR_API_KEY>" \\
   -H "Content-Type: application/json" \\
   -d '{
     "toolName": "shadow_flow_research_radar",

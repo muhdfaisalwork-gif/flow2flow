@@ -314,7 +314,7 @@ function renderNodeConfig(
               type="password"
               value={(config.authHeader as string) || ''}
               onChange={(e) => onChange('authHeader', e.target.value)}
-              placeholder="Bearer secret_mcp_token"
+              placeholder="Enter MCP token (optional)"
               className="bg-background/50 font-mono text-xs"
             />
           </div>
