@@ -14,7 +14,7 @@ export interface BlogPost {
   publishedAt: string;
   readingTimeMinutes?: number;
   readTime?: string;
-  author: any;
+  author: string | { name: string; role?: string; avatar?: string };
   authorRole?: string;
   targetKeyword?: string;
   tags: string[];
@@ -341,7 +341,8 @@ export function getAllBlogPosts(): BlogPost[] {
   }));
 }
 
-export function saveCustomBlogPost(post: any): void {
+export function saveCustomBlogPost(post: Partial<BlogPost> & { description?: string }): void {
+  if (!post.slug || !post.title || !post.content) return;
   const normalized: BlogPost = {
     slug: post.slug,
     title: post.title,

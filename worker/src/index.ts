@@ -3,7 +3,7 @@ export interface Env {
   APP_NAME: string;
   PAGES_ORIGIN?: string;
   AI?: {
-    run: (model: string, input: Record<string, unknown>) => Promise<any>;
+    run: (model: string, input: Record<string, unknown>) => Promise<unknown>;
   };
 }
 

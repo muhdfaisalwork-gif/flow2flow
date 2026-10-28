@@ -622,7 +622,7 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                           </label>
                           <select
                             value={tone}
-                            onChange={(e) => setTone(e.target.value as any)}
+                            onChange={(e) => setTone(e.target.value as "authoritative" | "practical" | "conversational")}
                             className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs"
                           >
                             <option value="authoritative">Authoritative & Deep-Dive</option>
@@ -1500,7 +1500,7 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                           </label>
                           <select
                             value={pitchTone}
-                            onChange={(e) => handleUpdatePitch(selectedOpp, pitchRecipient, e.target.value as any)}
+                            onChange={(e) => handleUpdatePitch(selectedOpp, pitchRecipient, e.target.value as "founder" | "developer" | "pr")}
                             className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs"
                           >
                             <option value="founder">Founder-to-Founder</option>

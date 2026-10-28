@@ -10,9 +10,12 @@ export interface BacklinkOpportunity {
   name: string;
   url: string;
   category: 'Awesome List' | 'Tech Directory' | 'Dev Publication' | 'AI Directory' | 'Open Source Roundup';
+  type?: 'Awesome List' | 'Tech Directory' | 'Dev Publication' | 'AI Directory' | 'Open Source Roundup';
   domainAuthorityEst: number; // 0 - 100
+  domainAuthority?: number;
   targetAudience: string;
   pitchAngle: string;
+  notes?: string;
   suggestedAnchorText: string;
   status: 'prospect' | 'drafted' | 'contacted' | 'acquired';
 }
@@ -105,12 +108,15 @@ export const CURATED_BACKLINK_TARGETS: BacklinkOpportunity[] = [
   },
 ];
 
-export const backlinkOpportunities = CURATED_BACKLINK_TARGETS.map(t => ({
+export const backlinkOpportunities: BacklinkOpportunity[] = CURATED_BACKLINK_TARGETS.map(t => ({
   id: t.id,
   name: t.name,
   url: t.url,
+  category: t.category,
   type: t.category,
+  domainAuthorityEst: t.domainAuthorityEst,
   domainAuthority: t.domainAuthorityEst,
+  pitchAngle: t.pitchAngle,
   notes: t.pitchAngle,
   targetAudience: t.targetAudience,
   suggestedAnchorText: t.suggestedAnchorText,
@@ -118,7 +124,7 @@ export const backlinkOpportunities = CURATED_BACKLINK_TARGETS.map(t => ({
 }));
 
 export function generateOutreachPitch(
-  opportunity: any,
+  opportunity: Partial<BacklinkOpportunity>,
   recipientName = 'Curator',
   tone: 'founder' | 'developer' | 'pr' = 'founder'
 ): { subject: string; body: string; followUp: string; recipientTitle?: string } {
