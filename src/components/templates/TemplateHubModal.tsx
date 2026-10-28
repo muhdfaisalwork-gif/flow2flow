@@ -18,7 +18,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkflowStore, createNewWorkflow } from '@/lib/store';
 import {
@@ -113,10 +112,10 @@ const TemplateHubModal: FC<TemplateHubModalProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-6xl max-h-[86vh] overflow-hidden flex flex-col"
+          className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-6xl max-h-[88vh] h-[88vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 via-transparent to-purple-500/10">
+          <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 via-transparent to-purple-500/10 shrink-0">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2.5">
@@ -176,7 +175,7 @@ const TemplateHubModal: FC<TemplateHubModalProps> = ({
           </div>
 
           {/* Templates Grid */}
-          <ScrollArea className="flex-1 p-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth overscroll-contain">
             {filteredTemplates.length === 0 ? (
               <div className="text-center py-12">
                 <LayoutGrid className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
@@ -247,7 +246,7 @@ const TemplateHubModal: FC<TemplateHubModalProps> = ({
                 })}
               </div>
             )}
-          </ScrollArea>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>

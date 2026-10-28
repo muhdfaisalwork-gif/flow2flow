@@ -2,7 +2,6 @@ import { type FC, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, History, RotateCcw, Trash2, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -180,7 +179,7 @@ const VersionHistory: FC<VersionHistoryProps> = ({
             </div>
 
             {/* Versions List */}
-            <ScrollArea className="flex-1">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -253,7 +252,7 @@ const VersionHistory: FC<VersionHistoryProps> = ({
                   })}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </motion.div>
         </motion.div>
       </AnimatePresence>

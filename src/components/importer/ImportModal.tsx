@@ -15,7 +15,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   parseN8nWorkflow,
   type N8nImportResult,
@@ -285,7 +284,7 @@ const ImportModal: FC<ImportModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Right Column: Live Topology & Credentials Preview */}
-            <ScrollArea className="p-5">
+            <div className="p-5 overflow-y-auto h-full">
               {!previewResult ? (
                 <div className="h-full min-h-[280px] flex flex-col items-center justify-center text-center text-muted-foreground p-6">
                   <FileJson className="w-12 h-12 mb-3 opacity-30" />
@@ -385,7 +384,7 @@ const ImportModal: FC<ImportModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </div>
 
           {/* Footer */}
