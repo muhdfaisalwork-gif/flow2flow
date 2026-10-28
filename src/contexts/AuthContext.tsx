@@ -141,10 +141,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const d1Msg = d1Err instanceof Error ? d1Err.message : String(d1Err);
       // Fallback to Supabase
       try {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        if (!error && data?.user) {
+          // Sync account to D1 edge database in background
+          d1Api.signUp(email, password, data.user.user_metadata?.display_name || email.split('@')[0])
+            .catch(() => {});
+        }
         return { error };
       } catch (sbErr: unknown) {
         const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
