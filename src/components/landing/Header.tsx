@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Menu, X, Github, Star, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,30 +25,9 @@ const navLinks = [
   { name: "AI SEO", href: "/seo-agent" },
 ];
 
-
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState<"google" | "apple" | null>(null);
   const { user, signOut } = useAuth();
-
-  const handleOAuthSignIn = async (provider: "google" | "apple") => {
-    setIsLoading(provider);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-      if (error) {
-        toast.error(`Failed to sign in with ${provider}: ${error.message}`);
-      }
-    } catch (err) {
-      toast.error(`An error occurred during ${provider} sign-in`);
-    } finally {
-      setIsLoading(null);
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -133,27 +111,12 @@ export function Header() {
               </DropdownMenu>
             ) : (
               <>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleOAuthSignIn("google")}
-                  disabled={isLoading !== null}
-                >
-                  {isLoading === "google" ? "Signing in..." : "Google"}
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Sign In</Link>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleOAuthSignIn("apple")}
-                  disabled={isLoading !== null}
-                >
-                  {isLoading === "apple" ? "Signing in..." : "Apple"}
+                <Button size="sm" className="gradient-primary text-white border-0 glow-primary" asChild>
+                  <Link to="/signup">Get Started Free</Link>
                 </Button>
-                <Link to="/dashboard">
-                  <Button size="sm" className="gradient-primary text-white border-0 glow-primary">
-                    Get Started Free
-                  </Button>
-                </Link>
               </>
             )}
           </div>
@@ -165,6 +128,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Open mobile menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
@@ -232,26 +196,11 @@ export function Header() {
                   </>
                 ) : (
                   <>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="justify-center"
-                      onClick={() => handleOAuthSignIn("google")}
-                      disabled={isLoading !== null}
-                    >
-                      {isLoading === "google" ? "Signing in..." : "Sign in with Google"}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="justify-center"
-                      onClick={() => handleOAuthSignIn("apple")}
-                      disabled={isLoading !== null}
-                    >
-                      {isLoading === "apple" ? "Signing in..." : "Sign in with Apple"}
+                    <Button variant="outline" size="sm" className="justify-center" asChild>
+                      <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
                     </Button>
                     <Button size="sm" className="gradient-primary text-white border-0" asChild>
-                      <Link to="/dashboard">Get Started Free</Link>
+                      <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>Get Started Free</Link>
                     </Button>
                   </>
                 )}
