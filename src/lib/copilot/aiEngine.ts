@@ -80,8 +80,8 @@ export const COPILOT_MODELS: Record<CopilotProvider, { label: string; defaultMod
     requiresKey: true,
   },
   ollama: {
-    label: 'Local Ollama (Qwen 2.5 Coder)',
-    defaultModel: 'qwen2.5-coder:7b',
+    label: 'Local Ollama (Gemma 4)',
+    defaultModel: 'gemma4:latest',
     requiresKey: false,
   },
 };
