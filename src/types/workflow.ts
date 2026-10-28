@@ -26,6 +26,9 @@ export type NodeType =
   | 'ai-extract'
   | 'ai-summarize'
   | 'ai-agent'
+  // Connectors & Tools
+  | 'mcp-tool'
+  | 'activepieces-action'
   // Storage / Generic
   | 'vector-store'
   | 'memory-node'
@@ -37,6 +40,7 @@ export type NodeCategory =
   | 'actions'
   | 'logic'
   | 'ai'
+  | 'connectors'
   | 'storage'
   | 'trigger'
   | 'action';

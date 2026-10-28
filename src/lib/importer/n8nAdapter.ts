@@ -90,6 +90,26 @@ interface ServiceMappingEntry {
  * to canonical categories, Shadow Flow node types, colors, and Lucide SVG icon identifiers.
  */
 export const SERVICE_RESOLVER_TABLE: ServiceMappingEntry[] = [
+  // === CONNECTORS & MCP ===
+  {
+    match: /(mcp|model-context-protocol)/i,
+    flowType: 'mcp-tool',
+    category: 'connectors',
+    canonicalCategory: 'action',
+    icon: 'Bot',
+    color: '#8B5CF6',
+    serviceName: 'Model Context Protocol',
+  },
+  {
+    match: /(activepieces|piece)/i,
+    flowType: 'activepieces-action',
+    category: 'connectors',
+    canonicalCategory: 'action',
+    icon: 'Boxes',
+    color: '#EC4899',
+    serviceName: 'Activepieces Piece',
+  },
+
   // === TRIGGERS ===
   {
     match: /webhook/i,

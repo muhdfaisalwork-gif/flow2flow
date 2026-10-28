@@ -1,5 +1,5 @@
 import { type FC, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ReactFlowProvider } from '@xyflow/react';
 
 import { useWorkflowStore, createNewWorkflow } from '@/stores/workflowStore';
@@ -17,11 +17,13 @@ import TemplatesGallery from '@/components/workflow/TemplatesGallery';
 import ShareDialog from '@/components/workflow/ShareDialog';
 import VersionHistory from '@/components/workflow/VersionHistory';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import type { WorkflowNode, WorkflowEdge, Workflow } from '@/types/workflow';
 
 const WorkflowEditor: FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const urlPrompt = searchParams.get('prompt') || undefined;
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -37,7 +39,13 @@ const WorkflowEditor: FC = () => {
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
   
   const { setWorkflow, workflow, nodes, edges, markClean, updateWorkflowMeta } = useWorkflowStore();
-  const { isNodeLibraryOpen, isConfigPanelOpen, isAIAssistantOpen } = useUIStore();
+  const { isNodeLibraryOpen, isConfigPanelOpen, isAIAssistantOpen, setAIAssistantOpen, toggleAIAssistant } = useUIStore();
+
+  useEffect(() => {
+    if (searchParams.get('openCopilot') === 'true' || searchParams.get('prompt')) {
+      setAIAssistantOpen(true);
+    }
+  }, [searchParams, setAIAssistantOpen]);
 
   useEffect(() => {
     loadWorkflow();
@@ -362,12 +370,25 @@ const WorkflowEditor: FC = () => {
           
           <div className="flex-1 relative">
             <FlowCanvas />
+
+            {/* Floating Chat to Build with AI Trigger */}
+            <div className="absolute bottom-6 right-6 z-30">
+              <button
+                type="button"
+                onClick={toggleAIAssistant}
+                className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-primary via-purple-600 to-indigo-600 text-white shadow-2xl hover:shadow-primary/30 hover:scale-105 transition-all duration-200 border border-primary/40 font-medium text-xs sm:text-sm cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300 group-hover:rotate-12 transition-transform" />
+                <span>Chat to Build with AI</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+              </button>
+            </div>
           </div>
           
           <NodeConfigPanel isOpen={isConfigPanelOpen} />
         </div>
 
-        <AIAssistant isOpen={isAIAssistantOpen} />
+        <AIAssistant isOpen={isAIAssistantOpen} initialPrompt={urlPrompt} />
         
         {/* Dialogs */}
         <TemplatesGallery 

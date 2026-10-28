@@ -41,21 +41,23 @@ interface Message {
 export interface CopilotDrawerProps {
   isOpen: boolean;
   onClose?: () => void;
+  initialPrompt?: string;
 }
 
 const PROMPT_SUGGESTIONS = [
   'When a Stripe webhook arrives, check if amount > 100, summarize with Claude 3.5, save to Supabase, else alert Slack',
+  'Connect to MCP server tool and process incoming webhook payload',
+  'Trigger Activepieces Slack piece when GitHub star arrives',
   'Create an autonomous deep research workflow with Firecrawl, Perplexity, and Claude 3.5 Sonnet',
   'Insert a filter node between step 1 and step 2',
-  'Add an error notification to Discord',
-  'Switch model to Claude 3.5 Sonnet',
 ];
 
-const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose }) => {
+const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt }) => {
   const [provider, setProvider] = useState<CopilotProvider>('heuristic');
   const [apiKey, setApiKey] = useState('');
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
   const [showKeyInput, setShowKeyInput] = useState(false);
+  const initialTriggerRef = useRef<string | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -97,6 +99,13 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose }) => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (isOpen && initialPrompt && initialTriggerRef.current !== initialPrompt) {
+      initialTriggerRef.current = initialPrompt;
+      handleSynthesize(initialPrompt);
+    }
+  }, [isOpen, initialPrompt]);
 
   const handleSynthesize = async (promptOverride?: string) => {
     const promptText = (promptOverride || input).trim();

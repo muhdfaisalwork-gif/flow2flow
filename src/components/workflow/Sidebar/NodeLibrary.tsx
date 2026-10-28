@@ -1,6 +1,6 @@
 import { type FC, type DragEvent, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronDown, ChevronRight, Zap, Play, GitBranch, Sparkles, X, type LucideIcon } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Zap, Play, GitBranch, Sparkles, X, Bot, type LucideIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import type { NodeCategory, NodeDefinition, WorkflowNode, WorkflowNodeData } fro
 const categoryIcons: Record<string, LucideIcon> = {
   triggers: Zap,
   actions: Play,
+  connectors: Bot,
   logic: GitBranch,
   ai: Sparkles,
 };
@@ -25,7 +26,7 @@ interface NodeLibraryProps {
 const NodeLibrary: FC<NodeLibraryProps> = ({ isOpen }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['triggers', 'actions', 'logic', 'ai'])
+    new Set(['triggers', 'actions', 'connectors', 'logic', 'ai'])
   );
   const { setNodeLibraryOpen } = useUIStore();
   const isMobile = useIsMobile();

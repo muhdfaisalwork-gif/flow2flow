@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Plus, Search, Play, MoreVertical, 
   Zap, Clock, CheckCircle,
-  LogOut, User, Loader2, Trash2, Settings
+  LogOut, User, Loader2, Trash2, Settings, Sparkles, Wand2, Bot
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ const WORKFLOWS_PER_PAGE = 12;
 
 const Dashboard: FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
   const [workflows, setWorkflows] = useState<WorkflowFromDB[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,6 +49,15 @@ const Dashboard: FC = () => {
   const navigate = useNavigate();
 
   const linkPrefix = demo ? '/demo' : '';
+
+  const handleBuildWithAI = (promptText?: string) => {
+    const text = (promptText || aiPrompt).trim();
+    if (!text) {
+      navigate(`${linkPrefix}/workflow/new?openCopilot=true`);
+      return;
+    }
+    navigate(`${linkPrefix}/workflow/new?prompt=${encodeURIComponent(text)}`);
+  };
 
   useEffect(() => {
     if (demo) {
@@ -180,6 +190,89 @@ const Dashboard: FC = () => {
             <Button className="gradient-primary text-white gap-2"><Plus className="w-4 h-4" />New Workflow</Button>
           </Link>
         </div>
+
+        {/* AI Workflow Builder Prompt Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-5 sm:p-6 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-purple-500/10 to-indigo-500/10 shadow-lg"
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-primary/20 text-primary">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  Build Workflow with AI Chat
+                  <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-primary/40 text-primary bg-primary/10">
+                    Copilot
+                  </Badge>
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Describe what you want to automate in plain English. The AI Copilot builds nodes, sets up triggers, and wires connections.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleBuildWithAI()}
+              className="gap-1.5 text-xs self-start md:self-auto border-primary/30 hover:bg-primary/10"
+            >
+              <Bot className="w-3.5 h-3.5 text-primary" />
+              Open Copilot Chat
+            </Button>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleBuildWithAI();
+            }}
+            className="flex flex-col sm:flex-row gap-2.5"
+          >
+            <div className="relative flex-1">
+              <Wand2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+              <Input
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="e.g. When a Stripe webhook arrives, filter amount > 100, summarize with AI, and alert Activepieces Slack..."
+                className="pl-10 h-11 bg-background/80 border-border/70 text-sm focus-visible:ring-primary shadow-inner"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="gradient-primary text-white h-11 px-6 gap-2 text-sm font-medium shadow-md hover:scale-[1.02] transition-transform"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              Generate Workflow
+            </Button>
+          </form>
+
+          {/* Quick Suggestions */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap text-xs">
+            <span className="text-muted-foreground text-[11px] font-medium">Quick Prompts:</span>
+            {[
+              'Stripe webhook -> Activepieces Slack alert',
+              'Connect MCP Server tool to process tickets',
+              'Daily Google Sheets sync to PostgreSQL',
+              'AI Deep Research with Firecrawl & Claude',
+            ].map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => {
+                  setAiPrompt(suggestion);
+                  handleBuildWithAI(suggestion);
+                }}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-background/60 hover:bg-primary/20 hover:text-primary border border-border/60 transition-colors"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {stats.map((stat, i) => (

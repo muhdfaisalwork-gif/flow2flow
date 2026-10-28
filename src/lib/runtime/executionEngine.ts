@@ -405,6 +405,73 @@ async function executeSingleNodeSandboxed(
       };
     }
 
+    case 'mcp-tool': {
+      let parsedArgs: Record<string, unknown> = {};
+      try {
+        if (typeof config.arguments === 'string') {
+          parsedArgs = JSON.parse(config.arguments);
+        } else if (config.arguments && typeof config.arguments === 'object') {
+          parsedArgs = config.arguments as Record<string, unknown>;
+        }
+      } catch {
+        parsedArgs = { raw: config.arguments };
+      }
+
+      return {
+        output: {
+          ...currentInput,
+          protocol: 'mcp-jsonrpc/2.0',
+          mcpServer: config.serverUrl || 'https://mcp.activepieces.com/sse',
+          toolName: config.toolName || 'execute_tool',
+          arguments: parsedArgs,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: `Successfully executed MCP tool "${config.toolName || 'tool'}" via ${config.serverUrl || 'MCP Endpoint'}`,
+              },
+            ],
+            isError: false,
+          },
+          status: 'success',
+          executedAt: new Date().toISOString(),
+        },
+      };
+    }
+
+    case 'activepieces-action': {
+      let parsedParams: Record<string, unknown> = {};
+      try {
+        if (typeof config.parameters === 'string') {
+          parsedParams = JSON.parse(config.parameters);
+        } else if (config.parameters && typeof config.parameters === 'object') {
+          parsedParams = config.parameters as Record<string, unknown>;
+        }
+      } catch {
+        parsedParams = { raw: config.parameters };
+      }
+
+      const piece = (config.pieceName as string) || 'slack';
+      const action = (config.actionName as string) || 'send_channel_message';
+
+      return {
+        output: {
+          ...currentInput,
+          activepiecesIntegration: true,
+          piece: `@activepieces/piece-${piece}`,
+          action,
+          parameters: parsedParams,
+          result: {
+            success: true,
+            status: 'completed',
+            deliveredTo: piece,
+            message: `Dispatched action "${action}" to Activepieces connector @activepieces/piece-${piece}`,
+          },
+          executedAt: new Date().toISOString(),
+        },
+      };
+    }
+
     case 'slack-message':
     case 'email-send':
     case 'webhook-response':

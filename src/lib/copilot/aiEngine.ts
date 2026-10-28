@@ -667,6 +667,57 @@ export function synthesizeWorkflowHeuristic(
     lastMainNode = aiNode;
   }
 
+  // 3b. MCP Server Tool
+  if (p.includes('mcp') || p.includes('model context protocol')) {
+    const mcpNode = createFlowNode(
+      `node-${nodes.length + 1}`,
+      'MCP Server Tool',
+      'mcp',
+      { x: 800, y: 200 },
+      {
+        serverUrl: 'https://mcp.activepieces.com/sse',
+        toolName: 'execute_tool',
+        arguments: '{\n  "query": "{{ $json.body }}"\n}',
+      }
+    );
+    nodes.push(mcpNode);
+    edges.push({
+      id: `edge-${lastMainNode.id}-${mcpNode.id}`,
+      source: lastMainNode.id,
+      target: mcpNode.id,
+      sourceHandle: 'output_0',
+      type: 'custom',
+      animated: true,
+    });
+    lastMainNode = mcpNode;
+  }
+
+  // 3c. Activepieces Connector Piece
+  if (p.includes('activepieces') || p.includes('piece')) {
+    const piece = p.includes('sheet') ? 'google-sheets' : p.includes('github') ? 'github' : p.includes('airtable') ? 'airtable' : 'slack';
+    const apNode = createFlowNode(
+      `node-${nodes.length + 1}`,
+      `Activepieces (${piece})`,
+      'activepieces',
+      { x: 920, y: 200 },
+      {
+        pieceName: piece,
+        actionName: 'send_channel_message',
+        parameters: '{\n  "channel": "#general",\n  "text": "{{ $json.message }}"\n}',
+      }
+    );
+    nodes.push(apNode);
+    edges.push({
+      id: `edge-${lastMainNode.id}-${apNode.id}`,
+      source: lastMainNode.id,
+      target: apNode.id,
+      sourceHandle: 'output_0',
+      type: 'custom',
+      animated: true,
+    });
+    lastMainNode = apNode;
+  }
+
   // 4. Conditional Branching (If/Else or Filter)
   const needsBranching =
     p.includes('if ') ||

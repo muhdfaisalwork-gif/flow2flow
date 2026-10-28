@@ -72,6 +72,32 @@ const NodeConfigPanel: FC<NodeConfigPanelProps> = ({ isOpen }) => {
         case 'delay':
           result = { output: parsedInput, message: `Would delay ${config.seconds || 5}s` };
           break;
+        case 'mcp-tool':
+          result = {
+            mcpProtocol: '2024-11-05',
+            status: 'connected',
+            serverUrl: config.serverUrl || 'https://mcp.activepieces.com/sse',
+            tool: config.toolName || 'example_tool',
+            result: {
+              content: [
+                { type: 'text', text: `Tool executed successfully with input: ${JSON.stringify(parsedInput)}` }
+              ],
+              isError: false,
+            },
+          };
+          break;
+        case 'activepieces-action':
+          result = {
+            piece: config.pieceName || 'slack',
+            action: config.actionName || 'send_channel_message',
+            status: 'success',
+            response: {
+              success: true,
+              timestamp: new Date().toISOString(),
+              executedPiece: `@activepieces/piece-${config.pieceName || 'slack'}`,
+            },
+          };
+          break;
         case 'webhook-response':
           result = { statusCode: config.statusCode || 200, body: config.body || parsedInput };
           break;
@@ -258,6 +284,103 @@ function renderNodeConfig(
   onChange: (key: string, value: unknown) => void
 ) {
   switch (type) {
+    case 'mcp-tool':
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>MCP Server Endpoint (HTTP / SSE)</Label>
+            <Input
+              value={(config.serverUrl as string) || ''}
+              onChange={(e) => onChange('serverUrl', e.target.value)}
+              placeholder="https://mcp.activepieces.com/sse or http://localhost:3000/sse"
+              className="font-mono text-xs bg-background/50"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Supports Model Context Protocol (MCP) servers, Activepieces MCP, and remote tool endpoints.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Tool Name</Label>
+            <Input
+              value={(config.toolName as string) || ''}
+              onChange={(e) => onChange('toolName', e.target.value)}
+              placeholder="e.g. search_database, send_slack, run_query"
+              className="bg-background/50 font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Authorization / Bearer Token (Optional)</Label>
+            <Input
+              type="password"
+              value={(config.authHeader as string) || ''}
+              onChange={(e) => onChange('authHeader', e.target.value)}
+              placeholder="Bearer secret_mcp_token"
+              className="bg-background/50 font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Tool Arguments (JSON)</Label>
+            <Textarea
+              value={(config.arguments as string) || ''}
+              onChange={(e) => onChange('arguments', e.target.value)}
+              placeholder={'{\n  "query": "search query"\n}'}
+              className="font-mono text-xs bg-background/50 min-h-[90px]"
+            />
+          </div>
+        </>
+      );
+
+    case 'activepieces-action':
+      return (
+        <>
+          <div className="space-y-2">
+            <Label>Activepieces Piece Connector</Label>
+            <select
+              value={(config.pieceName as string) || 'slack'}
+              onChange={(e) => onChange('pieceName', e.target.value)}
+              className="w-full px-3 py-2 rounded-md border border-input bg-background/50 text-sm"
+            >
+              <option value="slack">Slack (@activepieces/piece-slack)</option>
+              <option value="google-sheets">Google Sheets (@activepieces/piece-google-sheets)</option>
+              <option value="github">GitHub (@activepieces/piece-github)</option>
+              <option value="airtable">Airtable (@activepieces/piece-airtable)</option>
+              <option value="discord">Discord (@activepieces/piece-discord)</option>
+              <option value="openai">OpenAI (@activepieces/piece-openai)</option>
+              <option value="postgres">PostgreSQL (@activepieces/piece-postgres)</option>
+              <option value="stripe">Stripe (@activepieces/piece-stripe)</option>
+              <option value="custom">Custom Piece (NPM / Self-hosted)</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label>Action Name</Label>
+            <Input
+              value={(config.actionName as string) || ''}
+              onChange={(e) => onChange('actionName', e.target.value)}
+              placeholder="e.g. send_channel_message, insert_row, create_issue"
+              className="bg-background/50 font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Activepieces Cloud / Instance Webhook URL or API Key</Label>
+            <Input
+              value={(config.apiKey as string) || ''}
+              onChange={(e) => onChange('apiKey', e.target.value)}
+              placeholder="https://cloud.activepieces.com/api/v1/webhooks/... or API key"
+              className="bg-background/50 font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Parameters (JSON)</Label>
+            <Textarea
+              value={(config.parameters as string) || ''}
+              onChange={(e) => onChange('parameters', e.target.value)}
+              placeholder={'{\n  "channel": "#general",\n  "text": "Hello from Shadow Flow"\n}'}
+              className="font-mono text-xs bg-background/50 min-h-[90px]"
+            />
+          </div>
+        </>
+      );
+
     case 'webhook-trigger':
       return (
         <>

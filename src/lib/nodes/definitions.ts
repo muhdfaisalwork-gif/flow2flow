@@ -228,6 +228,40 @@ export const nodeDefinitions: NodeDefinition[] = [
     outputs: 1,
     defaultData: { maxLength: 200, style: 'concise' },
   },
+
+  // Connectors & MCP
+  {
+    type: 'mcp-tool',
+    label: 'MCP Server Tool',
+    description: 'Call tools on any Model Context Protocol (MCP) server over SSE/HTTP',
+    category: 'connectors',
+    icon: 'Bot',
+    color: 'hsl(var(--primary))',
+    inputs: 1,
+    outputs: 1,
+    defaultData: {
+      serverUrl: 'https://mcp.activepieces.com/sse',
+      toolName: '',
+      arguments: '{\n  "query": "hello"\n}',
+      authHeader: '',
+    },
+  },
+  {
+    type: 'activepieces-action',
+    label: 'Activepieces Piece',
+    description: 'Execute Activepieces connector (Slack, Google Sheets, GitHub, etc.)',
+    category: 'connectors',
+    icon: 'Blocks',
+    color: 'hsl(var(--primary))',
+    inputs: 1,
+    outputs: 1,
+    defaultData: {
+      pieceName: 'slack',
+      actionName: 'send_channel_message',
+      parameters: '{\n  "channel": "#general",\n  "text": "Hello from Shadow Flow"\n}',
+      apiKey: '',
+    },
+  },
 ];
 
 export const getNodeDefinition = (type: string): NodeDefinition | undefined => {
@@ -241,6 +275,7 @@ export const getNodesByCategory = (category: string): NodeDefinition[] => {
 export const nodeCategories = [
   { id: 'triggers', label: 'Triggers', icon: 'Zap', description: 'Start your workflow' },
   { id: 'actions', label: 'Actions', icon: 'Play', description: 'Perform operations' },
+  { id: 'connectors', label: 'Connectors & MCP', icon: 'Bot', description: 'MCP Servers & Activepieces' },
   { id: 'logic', label: 'Logic', icon: 'GitBranch', description: 'Control flow' },
   { id: 'ai', label: 'AI', icon: 'Sparkles', description: 'AI-powered nodes' },
 ] as const;
