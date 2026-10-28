@@ -1,9 +1,7 @@
 import { type FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Zap, Plus, Trash2, Key, Loader2, CreditCard, Sparkles, Sun, Moon, LogOut } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { useTheme } from '@/contexts/ThemeContext';
+import { ArrowLeft, User, Zap, Plus, Trash2, Key, Loader2, CreditCard, Sparkles, LogOut } from 'lucide-react';
 import { TFASettings } from '@/components/settings/TFASettings';
 import {
   SAAS_PLANS,
@@ -47,7 +45,6 @@ interface Credential {
 
 const Settings: FC = () => {
   const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [credentials, setCredentials] = useState<Credential[]>([]);
@@ -277,7 +274,6 @@ const Settings: FC = () => {
             <span className="font-bold text-lg">Shadow Flow</span>
           </Link>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
@@ -325,38 +321,6 @@ const Settings: FC = () => {
                     Member since {new Date(activeUser.created_at || Date.now()).toLocaleDateString()}
                   </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Appearance & Theme */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Choose between dark and light interface themes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant={theme === 'dark' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTheme('dark')}
-                  className="gap-2"
-                >
-                  <Moon className="w-4 h-4" />
-                  Dark Mode
-                </Button>
-                <Button
-                  type="button"
-                  variant={theme === 'light' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTheme('light')}
-                  className="gap-2"
-                >
-                  <Sun className="w-4 h-4" />
-                  Light Mode
-                </Button>
               </div>
             </CardContent>
           </Card>

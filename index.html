@@ -5,16 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       (function () {
-        try {
-          var saved = localStorage.getItem("shadowflow_theme") || localStorage.getItem("theme");
-          var mode = saved === "light" || saved === "dark" ? saved : "dark";
-          document.documentElement.classList.remove("light", "dark");
-          document.documentElement.classList.add(mode);
-          document.documentElement.setAttribute("data-theme", mode);
-          document.documentElement.style.colorScheme = mode;
-        } catch (e) {
-          document.documentElement.classList.add("dark");
-        }
+        document.documentElement.classList.remove("light");
+        document.documentElement.classList.add("dark");
+        document.documentElement.setAttribute("data-theme", "dark");
+        document.documentElement.style.colorScheme = "dark";
       })();
     </script>
     <title>Shadow Flow - Open Source Workflow Automation Platform</title>

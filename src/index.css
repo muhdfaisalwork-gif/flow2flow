@@ -7,64 +7,7 @@
 /* Flow2Flow Design System - Futuristic AI-Native Theme */
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-
-    --accent: 270 95% 60%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-
-    --radius: 0.75rem;
-
-    /* FlowForge Custom Colors */
-    --electric: 221 83% 53%;
-    --electric-foreground: 0 0% 100%;
-    --neon: 270 95% 60%;
-    --neon-foreground: 0 0% 100%;
-    --cyber: 180 100% 50%;
-    --cyber-foreground: 222 47% 11%;
-    --glow: 221 83% 53%;
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    /* Glassmorphism */
-    --glass: 0 0% 100% / 0.88;
-    --glass-border: 214 32% 88%;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 240 6% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221 83% 53%;
-  }
-
+  :root,
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
@@ -93,6 +36,8 @@
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
 
     /* FlowForge Custom Colors - Dark */
     --electric: 221 83% 60%;

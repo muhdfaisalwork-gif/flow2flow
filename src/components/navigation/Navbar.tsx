@@ -41,7 +41,6 @@ import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   exportWorkflow,
   importWorkflow,
@@ -225,8 +224,6 @@ const Navbar: FC<NavbarProps> = ({
           </div>
 
           <div className="flex items-center gap-1">
-            <ThemeToggle />
-
             <Button
               variant="ghost"
               size="icon"
@@ -446,8 +443,6 @@ const Navbar: FC<NavbarProps> = ({
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             AI Copilot
           </Button>
-
-          <ThemeToggle />
 
           <Separator orientation="vertical" className="h-6" />
 
