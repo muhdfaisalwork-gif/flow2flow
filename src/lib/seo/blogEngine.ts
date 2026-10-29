@@ -418,7 +418,13 @@ export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
       const posts: Record<string, unknown>[] = data.posts || [];
       for (const p of posts) {
         if (p && p.slug) {
-          mergedMap.set(String(p.slug), normalizeBlogPost(p));
+          const slug = String(p.slug);
+          const normalized = normalizeBlogPost(p);
+          const existing = mergedMap.get(slug);
+          if (!normalized.content && existing?.content) {
+            normalized.content = existing.content;
+          }
+          mergedMap.set(slug, normalized);
         }
       }
     }
@@ -436,7 +442,13 @@ export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
       const posts: Record<string, unknown>[] = d1Data.posts || [];
       for (const p of posts) {
         if (p && p.slug) {
-          mergedMap.set(String(p.slug), normalizeBlogPost(p));
+          const slug = String(p.slug);
+          const normalized = normalizeBlogPost(p);
+          const existing = mergedMap.get(slug);
+          if (!normalized.content && existing?.content) {
+            normalized.content = existing.content;
+          }
+          mergedMap.set(slug, normalized);
         }
       }
     }
@@ -452,7 +464,13 @@ export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
         const localPosts: Record<string, unknown>[] = JSON.parse(raw);
         for (const p of localPosts) {
           if (p && p.slug) {
-            mergedMap.set(String(p.slug), normalizeBlogPost(p));
+            const slug = String(p.slug);
+            const normalized = normalizeBlogPost(p);
+            const existing = mergedMap.get(slug);
+            if (!normalized.content && existing?.content) {
+              normalized.content = existing.content;
+            }
+            mergedMap.set(slug, normalized);
           }
         }
       }
@@ -473,31 +491,39 @@ export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
  * Looks up a blog post by slug, dynamically fetching from CDN or Edge D1 if not yet in memory.
  */
 export async function fetchBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
+  // If already in memory with full content, return immediately
   if (dynamicPostsCache) {
     const found = dynamicPostsCache.find(b => b.slug === slug);
-    if (found) return found;
+    if (found && found.content && found.content.trim().length > 0) {
+      return found;
+    }
   }
 
-  const all = await fetchDynamicBlogs();
-  const found = all.find(b => b.slug === slug);
-  if (found) return found;
-
-  // Single D1 lookup fallback
+  // 1. Direct D1 lookup for the specific slug (returns full content)
   try {
     const res = await fetch(`/api/blogs/${encodeURIComponent(slug)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.post) {
+      if (data.post && data.post.content) {
         const normalized = normalizeBlogPost(data.post as Record<string, unknown>);
-        dynamicPostsCache = [normalized, ...(dynamicPostsCache || [])];
+        if (dynamicPostsCache) {
+          dynamicPostsCache = [normalized, ...dynamicPostsCache.filter(p => p.slug !== slug)];
+        }
         return normalized;
       }
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    console.warn('[SEO Engine] Direct slug lookup error:', err);
   }
 
-  return undefined;
+  // 2. Fallback to /blogs.json dynamic list
+  const all = await fetchDynamicBlogs();
+  const found = all.find(b => b.slug === slug);
+  if (found && found.content && found.content.trim().length > 0) {
+    return found;
+  }
+
+  return found || undefined;
 }
 
 export function saveCustomBlogPost(post: Partial<BlogPost> & { description?: string }): void {

@@ -1603,7 +1603,7 @@ export default {
     if (url.pathname === '/api/blogs' && request.method === 'GET') {
       try {
         const rows = await env.DB.prepare(
-          'SELECT id, slug, title, excerpt, category, published_at as publishedAt, updated_at as updatedAt, reading_time_minutes as readingTimeMinutes, author, author_role as authorRole, target_keyword as targetKeyword, tags, schema_json_ld as schemaJsonLd FROM blogs ORDER BY published_at DESC'
+          'SELECT id, slug, title, excerpt, content, category, published_at as publishedAt, updated_at as updatedAt, reading_time_minutes as readingTimeMinutes, author, author_role as authorRole, target_keyword as targetKeyword, tags, schema_json_ld as schemaJsonLd FROM blogs ORDER BY published_at DESC'
         ).all();
 
         const posts = (rows.results || []).map((row: Record<string, unknown>) => {

@@ -42,7 +42,7 @@ export default function BlogPost() {
     let isMounted = true;
 
     const existing = getBlogPostBySlug(slug);
-    if (existing) {
+    if (existing && existing.content && existing.content.trim()) {
       setPost(existing);
       setIsLoading(false);
     } else {
@@ -52,7 +52,7 @@ export default function BlogPost() {
     fetchBlogPostBySlug(slug)
       .then((found) => {
         if (!isMounted) return;
-        if (found) {
+        if (found && found.content && found.content.trim()) {
           setPost(found);
         }
       })
@@ -123,8 +123,65 @@ export default function BlogPost() {
     post.publishedAt
   );
 
+  // Inline markdown parser for links, bold, code, and italic
+  const renderInlineMarkdown = (text: string) => {
+    const parts: (string | JSX.Element)[] = [];
+    const regex = /(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+
+      if (match[2] && match[3]) {
+        const href = match[3];
+        const isExternal = href.startsWith("http") && !href.includes("shadowflow.work");
+        parts.push(
+          <a
+            key={`link-${match.index}`}
+            href={href}
+            target={isExternal ? "_blank" : undefined}
+            rel={isExternal ? "noopener noreferrer" : undefined}
+            className="text-primary font-medium underline underline-offset-4 hover:text-primary/80 transition-colors"
+          >
+            {match[2]}
+          </a>
+        );
+      } else if (match[4]) {
+        parts.push(
+          <strong key={`bold-${match.index}`} className="font-semibold text-foreground">
+            {match[4]}
+          </strong>
+        );
+      } else if (match[5]) {
+        parts.push(
+          <code key={`code-${match.index}`} className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs text-primary font-medium">
+            {match[5]}
+          </code>
+        );
+      } else if (match[6]) {
+        parts.push(
+          <em key={`italic-${match.index}`} className="italic text-foreground/90">
+            {match[6]}
+          </em>
+        );
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
   // Simple Markdown renderer for headings, code blocks, lists, quotes, tables
   const renderMarkdownContent = (markdown: string) => {
+    if (!markdown || !markdown.trim()) return null;
     const lines = markdown.split("\n");
     const elements: JSX.Element[] = [];
     let inCodeBlock = false;
@@ -174,35 +231,35 @@ export default function BlogPost() {
       if (line.startsWith("# ")) {
         elements.push(
           <h1 key={index} className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-8 mb-4 text-foreground">
-            {line.replace("# ", "")}
+            {renderInlineMarkdown(line.replace("# ", ""))}
           </h1>
         );
       } else if (line.startsWith("## ")) {
         elements.push(
           <h2 key={index} className="text-2xl sm:text-3xl font-bold tracking-tight mt-8 mb-4 text-foreground border-b border-border pb-2">
-            {line.replace("## ", "")}
+            {renderInlineMarkdown(line.replace("## ", ""))}
           </h2>
         );
       } else if (line.startsWith("### ")) {
         elements.push(
           <h3 key={index} className="text-xl sm:text-2xl font-semibold mt-6 mb-3 text-foreground">
-            {line.replace("### ", "")}
+            {renderInlineMarkdown(line.replace("### ", ""))}
           </h3>
         );
       } else if (line.startsWith("> ")) {
         elements.push(
           <blockquote key={index} className="my-4 border-l-4 border-primary pl-4 italic text-muted-foreground bg-primary/5 py-2 pr-4 rounded-r-lg">
-            {line.replace("> ", "")}
+            {renderInlineMarkdown(line.replace("> ", ""))}
           </blockquote>
         );
       } else if (line.startsWith("- ")) {
         elements.push(
           <li key={index} className="ml-6 list-disc text-sm text-foreground/90 my-1 leading-relaxed">
-            {line.replace("- ", "")}
+            {renderInlineMarkdown(line.replace("- ", ""))}
           </li>
         );
       } else if (line.startsWith("|")) {
-        // Table row rendered as simple monospace or border
+        // Table row rendered as monospace border
         elements.push(
           <div key={index} className="font-mono text-xs overflow-x-auto py-1 text-muted-foreground">
             {line}
@@ -213,7 +270,7 @@ export default function BlogPost() {
       } else if (line.trim()) {
         elements.push(
           <p key={index} className="text-sm sm:text-base text-foreground/90 leading-relaxed my-3">
-            {line}
+            {renderInlineMarkdown(line)}
           </p>
         );
       }
@@ -312,7 +369,14 @@ export default function BlogPost() {
 
           {/* Article Body */}
           <article className="prose prose-invert max-w-none mb-16">
-            {renderMarkdownContent(post.content)}
+            {post.content ? (
+              renderMarkdownContent(post.content)
+            ) : (
+              <div className="p-8 text-center border border-dashed border-border rounded-xl">
+                <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Loading article content from edge cache...</p>
+              </div>
+            )}
           </article>
 
           {/* Author / AI SEO Attribution Footer */}
