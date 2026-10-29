@@ -13,6 +13,7 @@
 
 ## Technical Engineering Blog
 
+- [Building an Autonomous B2B Lead Enrichment Pipeline with Webhooks, Clay, and Resend](https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline): Complete architecture for automating inbound webhook capture, domain scraping, contact enrichment, and transactional email routing with sub-second execution.
 - [Fixing Broken AI Pipelines for Free: Deterministic Graph Repair with the Zero-Cost Heuristic Engine](https://shadowflow.work/blog/deterministic-graph-repair-zero-cost-heuristic-engine): Why relying on recursive LLM calls to fix syntax errors is expensive and slow, and how deterministic graph analysis resolves missing connectors instantly.
 - [Serverless DAG Orchestration: Sub-50ms Workflow Execution on Cloudflare Workers and D1](https://shadowflow.work/blog/serverless-dag-orchestration-cloudflare-workers-d1): How running directed acyclic graph execution on Cloudflare edge isolates memory, prevents container cold starts, and scales without VM overhead.
 - [Migrating from n8n to Shadow Flow: 100% Apache 2.0 Freedom with Zero Workflow Re-Writes](https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide): A comprehensive migration playbook showing how Shadow Flow's Universal n8n Importer and Kahn auto-layout preserve your existing node configurations and trigger bindings.

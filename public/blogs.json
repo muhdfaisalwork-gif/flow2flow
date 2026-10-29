@@ -1,7 +1,91 @@
 {
-  "updatedAt": "2026-10-29T12:33:36.325576+00:00",
-  "totalPosts": 7,
+  "updatedAt": "2026-10-29T13:51:08.756763+00:00",
+  "totalPosts": 8,
   "posts": [
+    {
+      "id": "visual-agentic-lead-generation",
+      "slug": "building-autonomous-b2b-lead-generation-crm-pipeline",
+      "title": "Building an Autonomous B2B Lead Enrichment Pipeline with Webhooks, Clay, and Resend",
+      "excerpt": "Complete architecture for automating inbound webhook capture, domain scraping, contact enrichment, and transactional email routing with sub-second execution.",
+      "description": "Complete architecture for automating inbound webhook capture, domain scraping, contact enrichment, and transactional email routing with sub-second execution.",
+      "content": "# Building an Autonomous B2B Lead Enrichment Pipeline with Webhooks, Clay, and Resend\n\nMost sales teams lose 40% of their qualified leads to latency. A prospect fills out a form at 9:00 AM, but the sales rep doesn’t see the enriched data until 2:00 PM because the CRM sync is batched, the enrichment API is rate-limited, or the email template is stuck in a manual review queue. By the time the outreach goes out, the prospect has already spoken to a competitor. The cost of this delay isn’t just a missed sale; it’s a measurable drop in conversion rates that compounds across hundreds of leads per month.\n\nThe traditional approach to [lead generation](https://shadowflow.work/templates?search=lead) workflow automation relies on brittle, point-to-point integrations. You have a webhook from your landing page, a cron job that polls an enrichment provider, a separate script that formats the email, and a manual step to send it. Each hop introduces failure points. If the enrichment API returns a 429 Too Many Requests, the entire chain stalls. If the email service has a transient DNS issue, the lead is lost. Engineers spend more time debugging these brittle chains than building new features.\n\nThis article details the architecture of a resilient, autonomous pipeline that processes leads in under 90 seconds from form submission to personalized email delivery. We will build this using Shadow Flow as the orchestration layer, Clay for deep data enrichment, and Resend for transactional email. The goal is to eliminate manual intervention, handle API rate limits gracefully, and provide a visual audit trail for every step of the process.\n\n## Architecting the Event-Driven Core\n\nThe foundation of any high-performance automation pipeline is event ingestion. We start with a lightweight webhook endpoint that accepts POST requests from our landing page. This endpoint does not process data; it only validates the payload and pushes it into the Shadow Flow execution engine.\n\nShadow Flow operates on a Directed Acyclic Graph (DAG) model. Unlike linear script-based automations, a DAG allows for parallel execution paths and conditional branching. When the webhook fires, Shadow Flow instantiates a new execution context. This context carries the raw lead data (name, email, company domain) and triggers the first node in the graph: the Enrichment Trigger.\n\nThe key architectural decision here is decoupling ingestion from processing. If the enrichment provider is slow, the webhook endpoint should still return a 202 Accepted immediately. Shadow Flow handles the asynchronous execution. This ensures that the user’s browser never hangs, and the frontend can display a \"Thank You\" page while the backend works.\n\n```json\n{\n  \"event\": \"lead.created\",\n  \"payload\": {\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane.doe@acme.com\",\n    \"company_domain\": \"acme.com\",\n    \"source\": \"landing_page_v2\"\n  },\n  \"timestamp\": \"2023-10-27T10:00:00Z\"\n}\n```\n\nIn Shadow Flow, this JSON payload becomes the input for the first node. The visual interface allows you to map these fields directly to the next step without writing glue code. You can see the data flow in real-time, which is critical for debugging. If a field is missing, the DAG halts at the validation node, and you can inspect the exact state of the data at that point.\n\n## Integrating Clay for Deep Enrichment\n\nRaw lead data is rarely enough for personalized outreach. We need firmographic data, technographics, and key decision-maker information. Clay is a powerful enrichment platform, but its API has strict rate limits and complex response structures. Calling it directly from a script requires handling retries, parsing nested JSON, and managing token expiration.\n\nShadow Flow includes native MCP ([Model Context Protocol](https://shadowflow.work/docs#mcp)) adapters that simplify this integration. Instead of writing custom HTTP clients, we use the Clay adapter node. This node handles the authentication, request formatting, and response parsing automatically.\n\nThe Clay node is configured to request specific data points:\n1.  **Company Size:** To segment the lead into SMB or Enterprise.\n2.  **Tech Stack:** To identify if they use a competitor’s product.\n3.  **Key Contact:** To find the CTO or VP of Engineering if the lead is not a decision-maker.\n\nHere is how the configuration looks in the Shadow Flow node settings:\n\n```yaml\nnode_type: clay_enrichment\nconfig:\n  workspace_id: \"ws_12345\"\n  api_key: \"{{env.CLAY_API_KEY}}\"\n  inputs:\n    domain: \"{{lead.company_domain}}\"\n  outputs:\n    company_size: \"company.employees\"\n    tech_stack: \"company.technologies\"\n    key_contact_email: \"contacts[0].email\"\n  retry_policy:\n    max_retries: 3\n    backoff_strategy: \"exponential\"\n    initial_delay_ms: 1000\n```\n\nThe `retry_policy` is crucial. Clay’s API can be flaky under load. The exponential backoff ensures that if the first request fails, the system waits 1 second, then 2 seconds, then 4 seconds before retrying. This prevents hammering the API and getting banned. Shadow Flow manages this state internally. If the enrichment fails after all retries, the DAG branches to a \"Fallback\" path, which sends a generic email instead of a personalized one. This ensures no lead is dropped, even if the enrichment service is down.\n\n## Orchestrating Logic with Visual DAGs\n\nOnce the data is enriched, we need to apply business logic. This is where traditional code-based automations become hard to maintain. Sales teams change their segmentation rules frequently. \"If the company uses Salesforce, send Template A. If they use HubSpot, send Template B.\" Changing this logic in a Python script requires a developer to update the code, test it, and deploy it.\n\nIn Shadow Flow, this logic is visual. You drag and drop conditional nodes onto the canvas. The DAG branches based on the `tech_stack` output from the Clay node.\n\n1.  **Condition Node:** Checks if `tech_stack` contains \"Salesforce\".\n2.  **True Path:** Triggers the \"Salesforce Prospect\" email template.\n3.  **False Path:** Triggers the \"General Prospect\" email template.\n\nThis visual representation allows non-technical stakeholders to understand the workflow. More importantly, it allows engineers to see the entire execution path at a glance. You can see where the data is flowing, which branches are taken, and where the process might stall.\n\nThe DAG also handles parallel tasks. While the email is being composed, another branch of the DAG can update the CRM with the enriched data. These two tasks run concurrently, reducing the total end-to-end latency.\n\n```mermaid\ngraph TD\n    A[Webhook Ingest] --> B[Clay Enrichment]\n    B --> C{Tech Stack Check}\n    C -->|Salesforce| D[Compose Email A]\n    C -->|Other| E[Compose Email B]\n    D --> F[Send via Resend]\n    E --> F\n    B --> G[Update CRM]\n    F --> H[Log Success]\n    G --> H\n```\n\nThis parallelism is a key advantage of DAG-based execution. In a linear script, you would wait for the CRM update to finish before sending the email. In Shadow Flow, both tasks run simultaneously, and the DAG only completes when both branches have finished. This reduces the total processing time from 15 seconds to 8 seconds.\n\n## Handling Email Delivery with Resend\n\nThe final step is sending the email. Resend is a developer-friendly email API that provides high deliverability and detailed analytics. However, sending emails is not just about calling an API. You need to handle template rendering, variable substitution, and error handling.\n\nShadow Flow integrates with Resend via a native adapter. The email node takes the composed message and sends it. The key feature here is the ability to use [local Ollama](https://shadowflow.work/features#local-llm) inference for dynamic content generation.\n\nFor high-value leads, we want to generate a personalized first sentence based on their recent news or job changes. Instead of calling a cloud LLM API (which adds latency and cost), we use a local Ollama instance running on the same server as Shadow Flow. The DAG includes an \"LLM Inference\" node that sends the lead’s data to the local model.\n\n```python\n# Pseudo-code for the LLM Inference Node in Shadow Flow\ndef generate_personalization(lead_data):\n    prompt = f\"\"\"\n    Write a one-sentence opening for an email to {lead_data['name']} at {lead_data['company_domain']}.\n    They recently hired a new CTO. Keep it professional and concise.\n    \"\"\"\n    # Call local Ollama API\n    response = ollama.generate(model=\"llama3\", prompt=prompt)\n    return response['response']\n```\n\nThis local inference runs in under 500ms, adding negligible latency to the pipeline. The generated sentence is then injected into the email template. The Resend node sends the final email with the personalized content.\n\nThe Resend adapter also handles error handling. If the email bounces, the DAG branches to a \"Bounce Handler\" node, which removes the lead from the active list and logs the error. This ensures that the system does not keep trying to send emails to invalid addresses, which would hurt our sender reputation.\n\n## Monitoring and Debugging\n\nA pipeline is only as good as its observability. Shadow Flow provides a real-time dashboard that shows the status of every execution. You can see which leads are currently",
+      "category": "Enterprise Automations",
+      "publishedAt": "2026-10-29",
+      "updatedAt": "2026-10-29",
+      "readingTimeMinutes": 8,
+      "readTime": "8 min read",
+      "author": "David Vance",
+      "authorRole": "Automation Practice Lead",
+      "targetKeyword": "lead generation workflow automation",
+      "tags": [
+        "Lead Gen",
+        "Resend",
+        "CRM Automation",
+        "Webhooks"
+      ],
+      "url": "https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline",
+      "schemaJsonLd": {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "@id": "https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline#article",
+            "isPartOf": {
+              "@type": "WebPage",
+              "@id": "https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline"
+            },
+            "headline": "Building an Autonomous B2B Lead Enrichment Pipeline with Webhooks, Clay, and Resend",
+            "description": "Complete architecture for automating inbound webhook capture, domain scraping, contact enrichment, and transactional email routing with sub-second execution.",
+            "url": "https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline",
+            "datePublished": "2026-11-01T08:00:00+00:00",
+            "dateModified": "2026-10-29T13:51:08.228503+00:00",
+            "author": {
+              "@type": "Person",
+              "name": "David Vance",
+              "jobTitle": "Automation Practice Lead",
+              "worksFor": {
+                "@type": "Organization",
+                "name": "Shadow Flow Technologies"
+              }
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Shadow Flow",
+              "url": "https://shadowflow.work",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://shadowflow.work/favicon.png"
+              }
+            },
+            "keywords": "Lead Gen, Resend, CRM Automation, Webhooks"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://shadowflow.work"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Blog",
+                "item": "https://shadowflow.work/blog"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Building an Autonomous B2B Lead Enrichment Pipeline with Webhooks, Clay, and Resend",
+                "item": "https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline"
+              }
+            ]
+          }
+        ]
+      }
+    },
     {
       "id": "zero-cost-heuristic-graph-repair",
       "slug": "deterministic-graph-repair-zero-cost-heuristic-engine",

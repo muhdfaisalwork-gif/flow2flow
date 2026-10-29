@@ -69,7 +69,9 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
         const data = (await res.json()) as { plan: string; limit: number | string; used: number; remaining: number | string };
         setQuotaInfo(data);
       }
-    } catch {}
+    } catch {
+      // Ignore network quota fetch error
+    }
   };
 
   useEffect(() => {
@@ -89,7 +91,9 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
-      } catch {}
+      } catch {
+        // Ignore localStorage parse error
+      }
     }
     return [
       {

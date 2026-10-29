@@ -437,7 +437,9 @@ async function checkAndIncrementUsage(
   try {
     const row = (await env.DB.prepare('SELECT count FROM ai_usage WHERE user_id = ? AND request_date = ?').bind(userId, today).first()) as { count: number } | null;
     currentUsage = row?.count || 0;
-  } catch {}
+  } catch {
+    // Usage lookup fallback
+  }
 
   if (limit < 999999 && currentUsage >= limit) {
     return { allowed: false, plan, limit, used: currentUsage, remaining: 0 };
@@ -449,7 +451,9 @@ async function checkAndIncrementUsage(
     await env.DB.prepare(
       'INSERT INTO ai_usage (id, user_id, request_date, count) VALUES (?, ?, ?, 1) ON CONFLICT(user_id, request_date) DO UPDATE SET count = count + 1'
     ).bind(usageId, userId, today).run();
-  } catch {}
+  } catch {
+    // Usage increment fallback
+  }
 
   const nextUsed = currentUsage + 1;
   const remaining = limit >= 999999 ? 999999 : Math.max(0, limit - nextUsed);
@@ -692,7 +696,9 @@ export default {
                 valid = true;
                 newBackupCodesJson = JSON.stringify(backupCheck.remainingHashedCodes);
               }
-            } catch {}
+            } catch {
+              // Ignore backup code parse error
+            }
           }
 
           if (!valid) {
@@ -790,7 +796,9 @@ export default {
               valid = true;
               newBackupCodesJson = JSON.stringify(backupCheck.remainingHashedCodes);
             }
-          } catch {}
+          } catch {
+            // Ignore backup code check error
+          }
         }
 
         if (!valid) {
@@ -879,7 +887,9 @@ export default {
         try {
           const list = JSON.parse(row.backup_codes);
           if (Array.isArray(list)) backupCodesRemaining = list.length;
-        } catch {}
+        } catch {
+          // Ignore invalid backup codes JSON
+        }
       }
 
       return jsonResponse({
@@ -1412,7 +1422,9 @@ export default {
         try {
           const row = (await env.DB.prepare('SELECT count FROM ai_usage WHERE user_id = ? AND request_date = ?').bind(userId, today).first()) as { count: number } | null;
           used = row?.count || 0;
-        } catch {}
+        } catch {
+          // Ignore usage query error
+        }
         const remaining = limit >= 999999 ? 999999 : Math.max(0, limit - used);
         return jsonResponse(
           {
@@ -1512,11 +1524,13 @@ export default {
           .bind(user.id)
           .all();
 
-        const nodes = (rows.results || []).map((row: any) => {
+        const nodes = (rows.results || []).map((row: Record<string, unknown>) => {
           let properties = {};
           try {
-            properties = JSON.parse(row.data || '{}');
-          } catch {}
+            properties = JSON.parse(String(row.data || '{}'));
+          } catch {
+            // Ignore property parse errors
+          }
           return {
             id: row.id,
             type: row.type,
@@ -1592,17 +1606,17 @@ export default {
           'SELECT id, slug, title, excerpt, category, published_at as publishedAt, updated_at as updatedAt, reading_time_minutes as readingTimeMinutes, author, author_role as authorRole, target_keyword as targetKeyword, tags, schema_json_ld as schemaJsonLd FROM blogs ORDER BY published_at DESC'
         ).all();
 
-        const posts = (rows.results || []).map((row: any) => {
+        const posts = (rows.results || []).map((row: Record<string, unknown>) => {
           let tags = [];
           let schemaJsonLd = {};
-          try { tags = JSON.parse(row.tags || '[]'); } catch {}
-          try { schemaJsonLd = JSON.parse(row.schemaJsonLd || '{}'); } catch {}
+          try { tags = JSON.parse(String(row.tags || '[]')); } catch { /* ignore */ }
+          try { schemaJsonLd = JSON.parse(String(row.schemaJsonLd || '{}')); } catch { /* ignore */ }
 
           return {
             ...row,
             tags,
             schemaJsonLd,
-            readTime: `${row.readingTimeMinutes || 6} min read`,
+            readTime: `${Number(row.readingTimeMinutes) || 6} min read`,
             url: `https://shadowflow.work/blog/${row.slug}`,
           };
         });
@@ -1625,7 +1639,7 @@ export default {
       try {
         const row = (await env.DB.prepare(
           'SELECT id, slug, title, excerpt, content, category, published_at as publishedAt, updated_at as updatedAt, reading_time_minutes as readingTimeMinutes, author, author_role as authorRole, target_keyword as targetKeyword, tags, schema_json_ld as schemaJsonLd FROM blogs WHERE slug = ?'
-        ).bind(slug).first()) as any;
+        ).bind(slug).first()) as Record<string, unknown> | null;
 
         if (!row) {
           return jsonResponse({ error: 'Blog post not found' }, 404, request);
@@ -1633,8 +1647,8 @@ export default {
 
         let tags = [];
         let schemaJsonLd = {};
-        try { tags = JSON.parse(row.tags || '[]'); } catch {}
-        try { schemaJsonLd = JSON.parse(row.schemaJsonLd || '{}'); } catch {}
+        try { tags = JSON.parse(String(row.tags || '[]')); } catch { /* ignore */ }
+        try { schemaJsonLd = JSON.parse(String(row.schemaJsonLd || '{}')); } catch { /* ignore */ }
 
         return jsonResponse(
           {
@@ -1643,7 +1657,7 @@ export default {
               ...row,
               tags,
               schemaJsonLd,
-              readTime: `${row.readingTimeMinutes || 6} min read`,
+              readTime: `${Number(row.readingTimeMinutes) || 6} min read`,
               url: `https://shadowflow.work/blog/${row.slug}`,
             },
           },
@@ -1660,10 +1674,10 @@ export default {
     // POST /api/blogs - Create or update a blog post
     if (url.pathname === '/api/blogs' && request.method === 'POST') {
       try {
-        const body = (await request.json()) as any;
-        const slug = body.slug?.trim();
-        const title = body.title?.trim();
-        const content = body.content?.trim();
+        const body = (await request.json()) as Record<string, unknown>;
+        const slug = String(body.slug || '').trim();
+        const title = String(body.title || '').trim();
+        const content = String(body.content || '').trim();
 
         if (!slug || !title || !content) {
           return jsonResponse({ error: 'Missing required fields: slug, title, content' }, 400, request);
