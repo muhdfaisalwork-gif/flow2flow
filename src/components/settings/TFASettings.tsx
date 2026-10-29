@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from '@/hooks/use-toast';
 import { useTFA } from '@/hooks/useTFA';
 import { supabase } from '@/integrations/supabase/client';
+import { d1Api } from '@/lib/api';
 import type { TFAMethod } from '@/types/tfa';
 
 export function TFASettings() {
@@ -34,6 +35,13 @@ export function TFASettings() {
     setSetupMethod('totp');
     
     try {
+      if (d1Api.getToken()) {
+        const response = await d1Api.setupTFA();
+        setTotpSecret(response.secret);
+        setTotpUri(response.totp_uri);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       const response = await supabase.functions.invoke('tfa-setup-totp', {
         headers: { Authorization: `Bearer ${session?.access_token}` }
@@ -104,6 +112,35 @@ export function TFASettings() {
     setIsVerifying(true);
     
     try {
+      if (d1Api.getToken()) {
+        const response = await d1Api.verifyAndEnableTFA(verificationCode, setupMethod);
+        if (response.success) {
+          if (response.backupCodes && response.backupCodes.length > 0) {
+            setBackupCodes(response.backupCodes);
+            setShowBackupCodes(true);
+          }
+          
+          toast({
+            title: '2FA enabled!',
+            description: `${setupMethod.toUpperCase()} verification is now active`,
+          });
+          
+          setSetupMethod(null);
+          setVerificationCode('');
+          setTotpSecret(null);
+          setTotpUri(null);
+          setDemoCode(null);
+          refetch();
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Invalid code',
+            description: 'Please check your code and try again',
+          });
+        }
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       const response = await supabase.functions.invoke('tfa-verify', {
         body: { code: verificationCode, method: setupMethod },
@@ -156,6 +193,25 @@ export function TFASettings() {
     toast({
       title: '2FA disabled',
       description: 'Two-factor authentication has been turned off',
+    });
+    refetch();
+  };
+
+  const handleRegenerateBackupCodes = async () => {
+    const { codes, error } = await generateBackupCodes();
+    if (error || !codes) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to generate codes',
+        description: 'Could not generate backup codes',
+      });
+      return;
+    }
+    setBackupCodes(codes);
+    setShowBackupCodes(true);
+    toast({
+      title: 'Backup codes regenerated',
+      description: 'Make sure to save your new backup codes.',
     });
     refetch();
   };
@@ -309,9 +365,14 @@ export function TFASettings() {
                   {settings.backup_codes.length} codes remaining
                 </p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setShowBackupCodes(true)}>
-                View backup codes
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleRegenerateBackupCodes}>
+                  Regenerate
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowBackupCodes(true)}>
+                  View backup codes
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

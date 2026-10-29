@@ -105,13 +105,70 @@ export const d1Api = {
     return data;
   },
 
-  async login(email: string, password: string): Promise<{ user: User; token: string }> {
-    const data = await apiFetch<{ success: boolean; user: User; token: string }>('/api/auth/login', {
+  async login(
+    email: string,
+    password: string,
+    tfaCode?: string
+  ): Promise<{ success: boolean; user?: User; token?: string; require2FA?: boolean; tempToken?: string; method?: string }> {
+    const data = await apiFetch<{
+      success: boolean;
+      user?: User;
+      token?: string;
+      require2FA?: boolean;
+      tempToken?: string;
+      method?: string;
+    }>('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, tfaCode }),
     });
-    setAuthToken(data.token, data.user);
+    if (data.token && data.user) {
+      setAuthToken(data.token, data.user);
+    }
     return data;
+  },
+
+  async login2FA(tempToken: string, code: string): Promise<{ success: boolean; user: User; token: string }> {
+    const data = await apiFetch<{ success: boolean; user: User; token: string }>('/api/auth/login/2fa', {
+      method: 'POST',
+      body: JSON.stringify({ tempToken, code }),
+    });
+    if (data.token && data.user) {
+      setAuthToken(data.token, data.user);
+    }
+    return data;
+  },
+
+  async getTFAStatus(): Promise<{
+    enabled: boolean;
+    preferred_method: string;
+    totp_verified: boolean;
+    backup_codes_remaining: number;
+  }> {
+    return apiFetch('/api/auth/tfa/status');
+  },
+
+  async setupTFA(): Promise<{ secret: string; totp_uri: string }> {
+    return apiFetch('/api/auth/tfa/setup', { method: 'POST' });
+  },
+
+  async verifyAndEnableTFA(code: string, secret?: string): Promise<{
+    success: boolean;
+    valid: boolean;
+    backupCodes: string[];
+    message: string;
+  }> {
+    return apiFetch('/api/auth/tfa/verify-and-enable', {
+      method: 'POST',
+      body: JSON.stringify({ code, secret }),
+    });
+  },
+
+  async disableTFA(): Promise<{ success: boolean; message: string }> {
+    return apiFetch('/api/auth/tfa/disable', { method: 'POST' });
+  },
+
+  async generateTFABackupCodes(): Promise<{ success: boolean; codes: string[] }> {
+    return apiFetch('/api/auth/tfa/generate-backup-codes', { method: 'POST' });
   },
 
   async getMe(): Promise<User | null> {

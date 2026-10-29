@@ -40,6 +40,7 @@ interface UserPayload {
   id: string;
   email: string;
   display_name?: string;
+  type?: string;
 }
 
 const ALLOWED_ORIGINS = [
@@ -54,7 +55,7 @@ const ALLOWED_ORIGINS = [
 
 function getCorsHeaders(request: Request): HeadersInit {
   const origin = request.headers.get('Origin') || '';
-  const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : '*';
+  const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
 
   return {
     'Access-Control-Allow-Origin': allowOrigin,
@@ -181,6 +182,7 @@ async function verifyJWT(token: string, secret: string): Promise<UserPayload | n
       id: decoded.id,
       email: decoded.email,
       display_name: decoded.display_name,
+      type: decoded.type,
     };
   } catch {
     return null;
@@ -192,7 +194,137 @@ async function getAuthUser(request: Request, env: Env): Promise<UserPayload | nu
   if (!authHeader.startsWith('Bearer ')) return null;
   const token = authHeader.replace('Bearer ', '').trim();
   if (!env.JWT_SECRET) return null;
-  return verifyJWT(token, env.JWT_SECRET);
+  const user = await verifyJWT(token, env.JWT_SECRET);
+  if (!user || user.type === '2fa_challenge') return null;
+  return user;
+}
+
+// ----------------------------------------------------------------------------
+// RFC 6238 TOTP & Two-Factor Authentication (Web Crypto)
+// ----------------------------------------------------------------------------
+
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32ToBytes(base32: string): Uint8Array {
+  const clean = base32.toUpperCase().replace(/[^A-Z2-7]/g, '');
+  let bits = 0;
+  let value = 0;
+  const bytes: number[] = [];
+
+  for (let i = 0; i < clean.length; i++) {
+    const idx = BASE32_ALPHABET.indexOf(clean[i]);
+    if (idx === -1) continue;
+    value = (value << 5) | idx;
+    bits += 5;
+
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
+function bytesToBase32(bytes: Uint8Array): string {
+  let bits = 0;
+  let value = 0;
+  let output = '';
+
+  for (let i = 0; i < bytes.length; i++) {
+    value = (value << 8) | bytes[i];
+    bits += 8;
+
+    while (bits >= 5) {
+      output += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+
+  if (bits > 0) {
+    output += BASE32_ALPHABET[(value << (5 - bits)) & 31];
+  }
+  return output;
+}
+
+async function generateHOTP(secretBase32: string, counter: number): Promise<string> {
+  const keyBytes = base32ToBytes(secretBase32);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyBytes,
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  );
+
+  const counterBuffer = new ArrayBuffer(8);
+  const counterView = new DataView(counterBuffer);
+  const high = Math.floor(counter / 0x100000000);
+  const low = counter >>> 0;
+  counterView.setUint32(0, high, false);
+  counterView.setUint32(4, low, false);
+
+  const hmac = await crypto.subtle.sign('HMAC', cryptoKey, counterBuffer);
+  const hmacBytes = new Uint8Array(hmac);
+
+  const offset = hmacBytes[hmacBytes.length - 1] & 0x0f;
+  const codeInt =
+    ((hmacBytes[offset] & 0x7f) << 24) |
+    ((hmacBytes[offset + 1] & 0xff) << 16) |
+    ((hmacBytes[offset + 2] & 0xff) << 8) |
+    (hmacBytes[offset + 3] & 0xff);
+
+  const otp = codeInt % 1000000;
+  return otp.toString().padStart(6, '0');
+}
+
+async function verifyTOTP(secretBase32: string, token: string, window = 1, timeStepSeconds = 30): Promise<boolean> {
+  if (!token || token.length !== 6) return false;
+  const currentCounter = Math.floor(Date.now() / 1000 / timeStepSeconds);
+
+  for (let offset = -window; offset <= window; offset++) {
+    const expected = await generateHOTP(secretBase32, currentCounter + offset);
+    if (expected === token.trim()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function hashBackupCode(code: string): Promise<string> {
+  const norm = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const data = new TextEncoder().encode(norm);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return bytesToHex(new Uint8Array(hash));
+}
+
+async function generateHashedBackupCodes(count = 8): Promise<{ plainCodes: string[]; hashedCodes: string[] }> {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const plainCodes: string[] = [];
+  const hashedCodes: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const rand = crypto.getRandomValues(new Uint8Array(8));
+    let code = '';
+    for (let j = 0; j < 8; j++) {
+      code += chars[rand[j] % chars.length];
+      if (j === 3) code += '-';
+    }
+    plainCodes.push(code);
+    hashedCodes.push(await hashBackupCode(code));
+  }
+
+  return { plainCodes, hashedCodes };
+}
+
+async function verifyBackupCode(code: string, hashedCodes: string[]): Promise<{ valid: boolean; remainingHashedCodes: string[] }> {
+  const normHash = await hashBackupCode(code);
+  const index = hashedCodes.indexOf(normHash);
+  if (index !== -1) {
+    const remaining = [...hashedCodes];
+    remaining.splice(index, 1);
+    return { valid: true, remainingHashedCodes: remaining };
+  }
+  return { valid: false, remainingHashedCodes: hashedCodes };
 }
 
 async function getEffectiveUserId(request: Request, env: Env): Promise<{ userId: string; isAuthenticated: boolean }> {
@@ -389,9 +521,10 @@ export default {
     // POST /api/auth/login
     if (url.pathname === '/api/auth/login' && request.method === 'POST') {
       try {
-        const body = (await request.json()) as { email?: string; password?: string };
+        const body = (await request.json()) as { email?: string; password?: string; tfaCode?: string };
         const email = body.email?.trim().toLowerCase();
         const password = body.password?.trim();
+        const tfaCode = body.tfaCode?.trim();
 
         if (!email || !password) {
           return jsonResponse({ error: 'Email and password are required' }, 400, request);
@@ -412,6 +545,63 @@ export default {
           return jsonResponse({ error: 'Invalid email or password' }, 401, request);
         }
 
+        // Check if user has 2FA enabled
+        const tfaRow = (await env.DB.prepare(
+          'SELECT enabled, secret, backup_codes FROM user_tfa WHERE user_id = ?'
+        ).bind(row.id).first()) as { enabled: number; secret: string; backup_codes: string } | null;
+
+        if (tfaRow && tfaRow.enabled) {
+          if (!tfaCode) {
+            // Issue short-lived 2FA challenge token (valid for 5 minutes)
+            if (!env.JWT_SECRET) {
+              return jsonResponse({ error: 'Server auth configuration missing' }, 500, request);
+            }
+            const challengeToken = await createJWT({
+              id: row.id,
+              email: row.email,
+              display_name: row.display_name,
+              type: '2fa_challenge',
+              exp: Math.floor(Date.now() / 1000) + 300,
+            }, env.JWT_SECRET);
+
+            return jsonResponse({
+              require2FA: true,
+              tempToken: challengeToken,
+              method: 'totp',
+              email: row.email,
+            }, 200, request);
+          }
+
+          // Verify provided 2FA code (TOTP or backup code)
+          let valid = false;
+          let newBackupCodesJson: string | null = null;
+
+          if (tfaCode.replace(/\D/g, '').length === 6) {
+            valid = await verifyTOTP(tfaRow.secret, tfaCode.replace(/\D/g, ''));
+          }
+
+          if (!valid && tfaRow.backup_codes) {
+            try {
+              const hashedList = JSON.parse(tfaRow.backup_codes) as string[];
+              const backupCheck = await verifyBackupCode(tfaCode, hashedList);
+              if (backupCheck.valid) {
+                valid = true;
+                newBackupCodesJson = JSON.stringify(backupCheck.remainingHashedCodes);
+              }
+            } catch {}
+          }
+
+          if (!valid) {
+            return jsonResponse({ error: 'Invalid 2FA code or backup code' }, 401, request);
+          }
+
+          if (newBackupCodesJson !== null) {
+            await env.DB.prepare('UPDATE user_tfa SET backup_codes = ? WHERE user_id = ?')
+              .bind(newBackupCodesJson, row.id)
+              .run();
+          }
+        }
+
         const user: UserPayload = { id: row.id, email: row.email, display_name: row.display_name };
         if (!env.JWT_SECRET) {
           return jsonResponse({ error: 'Server auth configuration missing' }, 500, request);
@@ -423,6 +613,211 @@ export default {
         const message = err instanceof Error ? err.message : String(err);
         return jsonResponse({ error: 'Login failed', details: message }, 500, request);
       }
+    }
+
+    // POST /api/auth/login/2fa - Complete 2FA login challenge
+    if (url.pathname === '/api/auth/login/2fa' && request.method === 'POST') {
+      try {
+        const body = (await request.json()) as { tempToken?: string; code?: string };
+        const tempToken = body.tempToken?.trim();
+        const code = body.code?.trim();
+
+        if (!tempToken || !code) {
+          return jsonResponse({ error: 'Challenge token and code are required' }, 400, request);
+        }
+
+        if (!env.JWT_SECRET) {
+          return jsonResponse({ error: 'Server auth configuration missing' }, 500, request);
+        }
+
+        const challenge = await verifyJWT(tempToken, env.JWT_SECRET);
+        if (!challenge || challenge.type !== '2fa_challenge') {
+          return jsonResponse({ error: '2FA session expired. Please sign in again.' }, 401, request);
+        }
+
+        const userRow = (await env.DB.prepare(
+          'SELECT id, email, display_name FROM users WHERE id = ?'
+        ).bind(challenge.id).first()) as { id: string; email: string; display_name: string } | null;
+
+        if (!userRow) {
+          return jsonResponse({ error: 'User not found' }, 404, request);
+        }
+
+        const tfaRow = (await env.DB.prepare(
+          'SELECT enabled, secret, backup_codes FROM user_tfa WHERE user_id = ?'
+        ).bind(userRow.id).first()) as { enabled: number; secret: string; backup_codes: string } | null;
+
+        if (!tfaRow || !tfaRow.enabled) {
+          return jsonResponse({ error: '2FA is not enabled for this user' }, 400, request);
+        }
+
+        let valid = false;
+        let newBackupCodesJson: string | null = null;
+
+        if (code.replace(/\D/g, '').length === 6) {
+          valid = await verifyTOTP(tfaRow.secret, code.replace(/\D/g, ''));
+        }
+
+        if (!valid && tfaRow.backup_codes) {
+          try {
+            const hashedList = JSON.parse(tfaRow.backup_codes) as string[];
+            const backupCheck = await verifyBackupCode(code, hashedList);
+            if (backupCheck.valid) {
+              valid = true;
+              newBackupCodesJson = JSON.stringify(backupCheck.remainingHashedCodes);
+            }
+          } catch {}
+        }
+
+        if (!valid) {
+          return jsonResponse({ error: 'Invalid 2FA code or backup code' }, 401, request);
+        }
+
+        if (newBackupCodesJson !== null) {
+          await env.DB.prepare('UPDATE user_tfa SET backup_codes = ? WHERE user_id = ?')
+            .bind(newBackupCodesJson, userRow.id)
+            .run();
+        }
+
+        const user: UserPayload = { id: userRow.id, email: userRow.email, display_name: userRow.display_name };
+        const token = await createJWT(user as unknown as Record<string, unknown>, env.JWT_SECRET);
+
+        return jsonResponse({ success: true, user, token }, 200, request);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: '2FA verification failed', details: message }, 500, request);
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // TWO-FACTOR AUTHENTICATION API ROUTES: /api/auth/tfa/*
+    // ------------------------------------------------------------------------
+
+    // GET /api/auth/tfa/status
+    if (url.pathname === '/api/auth/tfa/status' && request.method === 'GET') {
+      const user = await getAuthUser(request, env);
+      if (!user) return jsonResponse({ error: 'Unauthorized' }, 401, request);
+
+      const row = (await env.DB.prepare(
+        'SELECT enabled, preferred_method, backup_codes FROM user_tfa WHERE user_id = ?'
+      ).bind(user.id).first()) as { enabled: number; preferred_method: string; backup_codes: string } | null;
+
+      const enabled = Boolean(row?.enabled);
+      let backupCodesRemaining = 0;
+      if (row?.backup_codes) {
+        try {
+          const list = JSON.parse(row.backup_codes);
+          if (Array.isArray(list)) backupCodesRemaining = list.length;
+        } catch {}
+      }
+
+      return jsonResponse({
+        enabled,
+        preferred_method: row?.preferred_method || 'totp',
+        totp_verified: enabled,
+        backup_codes_remaining: backupCodesRemaining,
+      }, 200, request);
+    }
+
+    // POST /api/auth/tfa/setup
+    if (url.pathname === '/api/auth/tfa/setup' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      if (!user) return jsonResponse({ error: 'Unauthorized' }, 401, request);
+
+      const randomBytes = crypto.getRandomValues(new Uint8Array(20));
+      const secret = bytesToBase32(randomBytes);
+      const issuer = 'ShadowFlow';
+      const totpUri = `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(user.email)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
+
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        `INSERT INTO user_tfa (user_id, enabled, secret, backup_codes, preferred_method, created_at, updated_at)
+         VALUES (?, 0, ?, '[]', 'totp', ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET secret = ?, updated_at = ?`
+      ).bind(user.id, secret, now, now, secret, now).run();
+
+      return jsonResponse({
+        secret,
+        totp_uri: totpUri,
+      }, 200, request);
+    }
+
+    // POST /api/auth/tfa/verify-and-enable
+    if (url.pathname === '/api/auth/tfa/verify-and-enable' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      if (!user) return jsonResponse({ error: 'Unauthorized' }, 401, request);
+
+      const body = (await request.json()) as { code?: string; secret?: string; method?: string };
+      const code = body.code?.trim();
+      if (!code || code.length !== 6) {
+        return jsonResponse({ error: 'A 6-digit verification code is required' }, 400, request);
+      }
+
+      const row = (await env.DB.prepare(
+        'SELECT secret FROM user_tfa WHERE user_id = ?'
+      ).bind(user.id).first()) as { secret: string } | null;
+
+      const secretToVerify = body.secret?.trim() || row?.secret;
+      if (!secretToVerify) {
+        return jsonResponse({ error: 'No 2FA setup in progress. Please initiate setup first.' }, 400, request);
+      }
+
+      const isValid = await verifyTOTP(secretToVerify, code);
+      if (!isValid) {
+        return jsonResponse({ valid: false, error: 'Invalid verification code. Please check your authenticator app.' }, 400, request);
+      }
+
+      // Generate 8 fresh backup codes
+      const { plainCodes, hashedCodes } = await generateHashedBackupCodes(8);
+      const now = new Date().toISOString();
+
+      await env.DB.prepare(
+        `INSERT INTO user_tfa (user_id, enabled, secret, backup_codes, preferred_method, created_at, updated_at)
+         VALUES (?, 1, ?, ?, 'totp', ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET enabled = 1, secret = ?, backup_codes = ?, updated_at = ?`
+      ).bind(user.id, secretToVerify, JSON.stringify(hashedCodes), now, now, secretToVerify, JSON.stringify(hashedCodes), now).run();
+
+      return jsonResponse({
+        success: true,
+        valid: true,
+        message: 'Two-factor authentication enabled successfully',
+        backupCodes: plainCodes,
+      }, 200, request);
+    }
+
+    // POST /api/auth/tfa/disable
+    if (url.pathname === '/api/auth/tfa/disable' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      if (!user) return jsonResponse({ error: 'Unauthorized' }, 401, request);
+
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        'UPDATE user_tfa SET enabled = 0, updated_at = ? WHERE user_id = ?'
+      ).bind(now, user.id).run();
+
+      return jsonResponse({ success: true, message: 'Two-factor authentication disabled' }, 200, request);
+    }
+
+    // POST /api/auth/tfa/generate-backup-codes
+    if (url.pathname === '/api/auth/tfa/generate-backup-codes' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      if (!user) return jsonResponse({ error: 'Unauthorized' }, 401, request);
+
+      const row = (await env.DB.prepare(
+        'SELECT enabled FROM user_tfa WHERE user_id = ?'
+      ).bind(user.id).first()) as { enabled: number } | null;
+
+      if (!row || !row.enabled) {
+        return jsonResponse({ error: '2FA is not enabled on this account' }, 400, request);
+      }
+
+      const { plainCodes, hashedCodes } = await generateHashedBackupCodes(8);
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        'UPDATE user_tfa SET backup_codes = ?, updated_at = ? WHERE user_id = ?'
+      ).bind(JSON.stringify(hashedCodes), now, user.id).run();
+
+      return jsonResponse({ success: true, codes: plainCodes }, 200, request);
     }
 
     // GET /api/auth/me
@@ -538,10 +933,20 @@ export default {
 
     // GET /api/workflows/:id
     if (url.pathname.startsWith('/api/workflows/') && request.method === 'GET') {
+      const user = await getAuthUser(request, env);
+      if (!user) {
+        return jsonResponse({ error: 'Unauthorized' }, 401, request);
+      }
+
       const parts = url.pathname.split('/');
       const workflowId = parts[3];
 
       if (parts[4] === 'versions') {
+        const wf = await env.DB.prepare('SELECT id FROM workflows WHERE id = ? AND user_id = ?').bind(workflowId, user.id).first();
+        if (!wf) {
+          return jsonResponse({ error: 'Workflow not found' }, 404, request);
+        }
+
         // GET /api/workflows/:id/versions
         const rows = await env.DB.prepare(
           'SELECT id, version, change_summary, created_at FROM workflow_versions WHERE workflow_id = ? ORDER BY version DESC'
@@ -551,7 +956,7 @@ export default {
         return jsonResponse({ versions: rows.results || [] }, 200, request);
       }
 
-      const row = (await env.DB.prepare('SELECT * FROM workflows WHERE id = ?').bind(workflowId).first()) as Record<string, unknown> | null;
+      const row = (await env.DB.prepare('SELECT * FROM workflows WHERE id = ? AND user_id = ?').bind(workflowId, user.id).first()) as Record<string, unknown> | null;
       if (!row) {
         return jsonResponse({ error: 'Workflow not found' }, 404, request);
       }

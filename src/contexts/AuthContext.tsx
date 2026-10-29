@@ -11,12 +11,20 @@ export interface AppUser {
   user_metadata?: { display_name?: string; full_name?: string };
 }
 
+export interface SignInResult {
+  error: Error | null;
+  require2FA?: boolean;
+  tempToken?: string;
+  method?: string;
+}
+
 interface AuthContextType {
   user: AppUser | null;
   session: Session | null;
   isLoading: boolean;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, tfaCode?: string) => Promise<SignInResult>;
+  complete2FA: (tempToken: string, code: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -126,16 +134,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, tfaCode?: string): Promise<SignInResult> => {
     try {
       // Prioritize Cloudflare D1 edge database
-      const res = await d1Api.login(email, password);
-      setUser({
-        id: res.user.id,
-        email: res.user.email,
-        display_name: res.user.display_name,
-        user_metadata: { display_name: res.user.display_name },
-      });
+      const res = await d1Api.login(email, password, tfaCode);
+      if (res.require2FA) {
+        return {
+          error: null,
+          require2FA: true,
+          tempToken: res.tempToken,
+          method: res.method || 'totp',
+        };
+      }
+      if (res.user) {
+        setUser({
+          id: res.user.id,
+          email: res.user.email,
+          display_name: res.user.display_name,
+          user_metadata: { display_name: res.user.display_name },
+        });
+      }
       return { error: null };
     } catch (d1Err: unknown) {
       const d1Msg = d1Err instanceof Error ? d1Err.message : String(d1Err);
@@ -158,6 +176,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const complete2FA = async (tempToken: string, code: string): Promise<{ error: Error | null }> => {
+    try {
+      const res = await d1Api.login2FA(tempToken, code);
+      if (res.user) {
+        setUser({
+          id: res.user.id,
+          email: res.user.email,
+          display_name: res.user.display_name,
+          user_metadata: { display_name: res.user.display_name },
+        });
+      }
+      return { error: null };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { error: new Error(msg || '2FA verification failed') };
+    }
+  };
+
   const signOut = async () => {
     await d1Api.logout();
     try {
@@ -170,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signUp, signIn, complete2FA, signOut }}>
       {children}
     </AuthContext.Provider>
   );
