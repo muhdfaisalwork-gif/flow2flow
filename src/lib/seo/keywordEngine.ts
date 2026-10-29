@@ -239,3 +239,124 @@ export function getRelatedQuestions(keyword: string): string[] {
     `Best open-source alternatives for ${keyword}?`,
   ];
 }
+
+/**
+ * Dynamic Trending Keyword & Editorial Topic Discovery Engine
+ * Modeled after ShadowStream's discover_trending_keywords_and_topics.
+ * Discovers emerging search demand across LLM reasoning, visual DAGs,
+ * edge runtimes, and open-source automation.
+ */
+export function discoverTrendingKeywordsAndTopics(): KeywordCluster[] {
+  return [
+    {
+      primaryKeyword: 'deepseek reasoner agent',
+      intent: 'Informational',
+      monthlyVolumeEst: '38,000',
+      difficultyScore: 28,
+      difficultyLabel: 'Easy',
+      cpcUsd: 2.45,
+      relatedKeywords: [
+        'deepseek r1 api automation',
+        'open source reasoning model',
+        'local deepseek ollama workflow',
+        'deepseek r1 vs o3 mini benchmark',
+        'cost efficient reasoning workflows',
+      ],
+      suggestedArticleTitle: 'DeepSeek Reasoner: Deploying Frontier Reasoning at 90% Less Cost',
+      suggestedHeaders: [
+        'Why Frontier Reasoning Models Are Shifting to Open Weights',
+        'Connecting DeepSeek Reasoner to Visual Workflows',
+        'Latency and Cost Breakdown: Cloud vs Local Inference',
+        'Production Blueprint: Automated Support Ticket Triaging',
+      ],
+    },
+    {
+      primaryKeyword: 'model context protocol tools',
+      intent: 'Commercial',
+      monthlyVolumeEst: '29,500',
+      difficultyScore: 32,
+      difficultyLabel: 'Easy',
+      cpcUsd: 3.10,
+      relatedKeywords: [
+        'anthropic mcp server tutorial',
+        'mcp vs function calling architecture',
+        'model context protocol workflow integration',
+        'best mcp servers for developers',
+        'universal ai agent protocol',
+      ],
+      suggestedArticleTitle: 'Model Context Protocol (MCP) in Production: The Complete Developer Guide',
+      suggestedHeaders: [
+        'What Is Model Context Protocol and Why It Matters',
+        'Architecture: Servers, Tools, and Client Isolation',
+        'Wiring MCP Tools into a Drag-and-Drop Workflow Canvas',
+        'Security Best Practices: Token Management and Sandboxing',
+      ],
+    },
+    {
+      primaryKeyword: 'n8n alternative open source 2026',
+      intent: 'Commercial',
+      monthlyVolumeEst: '22,400',
+      difficultyScore: 36,
+      difficultyLabel: 'Moderate',
+      cpcUsd: 4.20,
+      relatedKeywords: [
+        'free self hosted workflow automation',
+        'apache 2.0 visual automation platform',
+        'n8n workflow migration tool',
+        'serverless edge workflow runtime',
+        'shadow flow vs n8n comparison',
+      ],
+      suggestedArticleTitle: 'The Best Open-Source n8n Alternatives in 2026: 100% Free & Edge-Native',
+      suggestedHeaders: [
+        'The Shift from VM Containers to Serverless Edge Execution',
+        'Universal n8n JSON Compatibility Without License Restrictions',
+        'Benchmarking Task Execution Costs: $0 Idle vs VM Hosting',
+        'How to Migrate Existing n8n JSON Blueprints in One Click',
+      ],
+    },
+    {
+      primaryKeyword: 'local ollama workflow automation',
+      intent: 'Transactional',
+      monthlyVolumeEst: '19,800',
+      difficultyScore: 30,
+      difficultyLabel: 'Easy',
+      cpcUsd: 2.80,
+      relatedKeywords: [
+        'ollama gemma 4 local agent',
+        'offline ai workflow builder',
+        'zero cost heuristic workflow engine',
+        'private llm data automation',
+        'local ai dag execution',
+      ],
+      suggestedArticleTitle: 'Building 100% Offline AI Workflows with Local Ollama and Gemma 4',
+      suggestedHeaders: [
+        'Why Enterprises Are Demanding Zero-Cloud AI Automation',
+        'Configuring Ollama Gemma 4 with Shadow Flow Locally',
+        'Offline Heuristic Synthesis: Generating Flows with No Internet',
+        'Ensuring Data Privacy and Zero API Telemetry',
+      ],
+    },
+    {
+      primaryKeyword: 'autonomous deep research workflow',
+      intent: 'Informational',
+      monthlyVolumeEst: '16,200',
+      difficultyScore: 34,
+      difficultyLabel: 'Moderate',
+      cpcUsd: 3.50,
+      relatedKeywords: [
+        'firecrawl web scraper workflow',
+        'perplexity citation research agent',
+        'claude 3.5 sonnet synthesis pipeline',
+        'automated market research report generator',
+        'multi step research agent dag',
+      ],
+      suggestedArticleTitle: 'How to Build an Autonomous Deep Research Pipeline with Webhooks & LLMs',
+      suggestedHeaders: [
+        'The Anatomy of an Autonomous Deep Research System',
+        'Scraping Live Web Sources with Firecrawl',
+        'Cross-Referencing Citations and Verifying Sources',
+        'Delivering Executive PDF and Slack Briefs Automatically',
+      ],
+    },
+  ];
+}

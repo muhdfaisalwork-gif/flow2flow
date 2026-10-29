@@ -1,0 +1,416 @@
+{
+  "updatedAt": "2026-10-29T05:25:44.648065+00:00",
+  "totalPosts": 5,
+  "posts": [
+    {
+      "slug": "deepseek-reasoner-enterprise-ai-automation",
+      "title": "Deploying DeepSeek Reasoner (R1) in Enterprise Automation: High-End Reasoning at 90% Less Cost",
+      "excerpt": "How open-weights reasoning models like DeepSeek R1 are transforming multi-step autonomous workflows by delivering frontier-class logical verification at commodity API pricing.",
+      "description": "How open-weights reasoning models like DeepSeek R1 are transforming multi-step autonomous workflows by delivering frontier-class logical verification at commodity API pricing.",
+      "category": "AI Agents",
+      "publishedAt": "2026-10-26",
+      "updatedAt": "2026-10-29",
+      "readingTimeMinutes": 7,
+      "readTime": "7 min read",
+      "author": "Faisal Muhammad",
+      "authorRole": "Chief AI Architect",
+      "targetKeyword": "deepseek reasoner agent",
+      "tags": [
+        "DeepSeek",
+        "Reasoning Models",
+        "AI Workflows",
+        "Cost Optimization"
+      ],
+      "url": "https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation",
+      "schemaJsonLd": {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "@id": "https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation#article",
+            "isPartOf": {
+              "@type": "WebPage",
+              "@id": "https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation"
+            },
+            "headline": "Deploying DeepSeek Reasoner (R1) in Enterprise Automation: High-End Reasoning at 90% Less Cost",
+            "description": "How open-weights reasoning models like DeepSeek R1 are transforming multi-step autonomous workflows by delivering frontier-class logical verification at commodity API pricing.",
+            "url": "https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation",
+            "datePublished": "2026-10-26T08:00:00+00:00",
+            "dateModified": "2026-10-29T05:25:44.647963+00:00",
+            "author": {
+              "@type": "Person",
+              "name": "Faisal Muhammad",
+              "jobTitle": "Chief AI Architect",
+              "worksFor": {
+                "@type": "Organization",
+                "name": "Shadow Flow Technologies"
+              }
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Shadow Flow",
+              "url": "https://shadowflow.work",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://shadowflow.work/favicon.png"
+              }
+            },
+            "keywords": "DeepSeek, Reasoning Models, AI Workflows, Cost Optimization"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://shadowflow.work"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Blog",
+                "item": "https://shadowflow.work/blog"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Deploying DeepSeek Reasoner (R1) in Enterprise Automation: High-End Reasoning at 90% Less Cost",
+                "item": "https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "migrating-from-n8n-to-shadow-flow-guide",
+      "title": "Migrating from n8n to Shadow Flow: 100% Apache 2.0 Freedom with Zero Workflow Re-Writes",
+      "excerpt": "A comprehensive migration playbook showing how Shadow Flow's Universal n8n Importer and Kahn auto-layout preserve your existing node configurations and trigger bindings.",
+      "description": "A comprehensive migration playbook showing how Shadow Flow's Universal n8n Importer and Kahn auto-layout preserve your existing node configurations and trigger bindings.",
+      "category": "Open Source",
+      "publishedAt": "2026-10-23",
+      "updatedAt": "2026-10-29",
+      "readingTimeMinutes": 6,
+      "readTime": "6 min read",
+      "author": "Sarah Chen",
+      "authorRole": "Head of Open Source",
+      "targetKeyword": "n8n alternative open source",
+      "tags": [
+        "n8n",
+        "Apache 2.0",
+        "Migration",
+        "DevOps"
+      ],
+      "url": "https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide",
+      "schemaJsonLd": {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "@id": "https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide#article",
+            "isPartOf": {
+              "@type": "WebPage",
+              "@id": "https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide"
+            },
+            "headline": "Migrating from n8n to Shadow Flow: 100% Apache 2.0 Freedom with Zero Workflow Re-Writes",
+            "description": "A comprehensive migration playbook showing how Shadow Flow's Universal n8n Importer and Kahn auto-layout preserve your existing node configurations and trigger bindings.",
+            "url": "https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide",
+            "datePublished": "2026-10-23T08:00:00+00:00",
+            "dateModified": "2026-10-29T05:25:44.648004+00:00",
+            "author": {
+              "@type": "Person",
+              "name": "Sarah Chen",
+              "jobTitle": "Head of Open Source",
+              "worksFor": {
+                "@type": "Organization",
+                "name": "Shadow Flow Technologies"
+              }
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Shadow Flow",
+              "url": "https://shadowflow.work",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://shadowflow.work/favicon.png"
+              }
+            },
+            "keywords": "n8n, Apache 2.0, Migration, DevOps"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://shadowflow.work"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Blog",
+                "item": "https://shadowflow.work/blog"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Migrating from n8n to Shadow Flow: 100% Apache 2.0 Freedom with Zero Workflow Re-Writes",
+                "item": "https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "model-context-protocol-mcp-visual-workflows",
+      "title": "Model Context Protocol (MCP) in Production: Wiring Real-World Tools into Drag-and-Drop AI Pipelines",
+      "excerpt": "An architectural deep dive into connecting Anthropic's Model Context Protocol (MCP) servers to visual DAG nodes for secure tool-augmented multi-agent execution.",
+      "description": "An architectural deep dive into connecting Anthropic's Model Context Protocol (MCP) servers to visual DAG nodes for secure tool-augmented multi-agent execution.",
+      "category": "AI Protocols",
+      "publishedAt": "2026-10-20",
+      "updatedAt": "2026-10-29",
+      "readingTimeMinutes": 8,
+      "readTime": "8 min read",
+      "author": "Alex Rivera",
+      "authorRole": "Lead Platform Engineer",
+      "targetKeyword": "model context protocol tools",
+      "tags": [
+        "MCP",
+        "Anthropic",
+        "LangChain",
+        "Tool Calling"
+      ],
+      "url": "https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows",
+      "schemaJsonLd": {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "@id": "https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows#article",
+            "isPartOf": {
+              "@type": "WebPage",
+              "@id": "https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows"
+            },
+            "headline": "Model Context Protocol (MCP) in Production: Wiring Real-World Tools into Drag-and-Drop AI Pipelines",
+            "description": "An architectural deep dive into connecting Anthropic's Model Context Protocol (MCP) servers to visual DAG nodes for secure tool-augmented multi-agent execution.",
+            "url": "https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows",
+            "datePublished": "2026-10-20T08:00:00+00:00",
+            "dateModified": "2026-10-29T05:25:44.648022+00:00",
+            "author": {
+              "@type": "Person",
+              "name": "Alex Rivera",
+              "jobTitle": "Lead Platform Engineer",
+              "worksFor": {
+                "@type": "Organization",
+                "name": "Shadow Flow Technologies"
+              }
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Shadow Flow",
+              "url": "https://shadowflow.work",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://shadowflow.work/favicon.png"
+              }
+            },
+            "keywords": "MCP, Anthropic, LangChain, Tool Calling"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://shadowflow.work"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Blog",
+                "item": "https://shadowflow.work/blog"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Model Context Protocol (MCP) in Production: Wiring Real-World Tools into Drag-and-Drop AI Pipelines",
+                "item": "https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "building-offline-ai-workflows-local-ollama-gemma4",
+      "title": "Building 100% Offline AI Workflows with Local Ollama, Gemma 4, and Zero-Cost Heuristics",
+      "excerpt": "How to build resilient visual automation pipelines that run completely offline with private Ollama inference and deterministic graph repair with $0.00 cloud API bills.",
+      "description": "How to build resilient visual automation pipelines that run completely offline with private Ollama inference and deterministic graph repair with $0.00 cloud API bills.",
+      "category": "Offline First",
+      "publishedAt": "2026-10-29",
+      "updatedAt": "2026-10-29",
+      "readingTimeMinutes": 6,
+      "readTime": "6 min read",
+      "author": "Faisal Muhammad",
+      "authorRole": "Chief AI Architect",
+      "targetKeyword": "local ollama workflow automation",
+      "tags": [
+        "Ollama",
+        "Gemma 4",
+        "Offline First",
+        "Zero Cost Heuristic"
+      ],
+      "url": "https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4",
+      "schemaJsonLd": {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "@id": "https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4#article",
+            "isPartOf": {
+              "@type": "WebPage",
+              "@id": "https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4"
+            },
+            "headline": "Building 100% Offline AI Workflows with Local Ollama, Gemma 4, and Zero-Cost Heuristics",
+            "description": "How to build resilient visual automation pipelines that run completely offline with private Ollama inference and deterministic graph repair with $0.00 cloud API bills.",
+            "url": "https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4",
+            "datePublished": "2026-10-29T08:00:00+00:00",
+            "dateModified": "2026-10-29T05:25:44.648035+00:00",
+            "author": {
+              "@type": "Person",
+              "name": "Faisal Muhammad",
+              "jobTitle": "Chief AI Architect",
+              "worksFor": {
+                "@type": "Organization",
+                "name": "Shadow Flow Technologies"
+              }
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Shadow Flow",
+              "url": "https://shadowflow.work",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://shadowflow.work/favicon.png"
+              }
+            },
+            "keywords": "Ollama, Gemma 4, Offline First, Zero Cost Heuristic"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://shadowflow.work"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Blog",
+                "item": "https://shadowflow.work/blog"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Building 100% Offline AI Workflows with Local Ollama, Gemma 4, and Zero-Cost Heuristics",
+                "item": "https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "building-autonomous-deep-research-pipeline-webhooks",
+      "title": "How to Build an Autonomous Deep Research Pipeline with Webhooks, Firecrawl, and Claude 3.5",
+      "excerpt": "A step-by-step production blueprint for scraping live web intelligence, cross-referencing citations with Perplexity, and delivering automated executive briefs.",
+      "description": "A step-by-step production blueprint for scraping live web intelligence, cross-referencing citations with Perplexity, and delivering automated executive briefs.",
+      "category": "Enterprise Automations",
+      "publishedAt": "2026-10-28",
+      "updatedAt": "2026-10-29",
+      "readingTimeMinutes": 7,
+      "readTime": "7 min read",
+      "author": "David Vance",
+      "authorRole": "Automation Practice Lead",
+      "targetKeyword": "autonomous deep research workflow",
+      "tags": [
+        "Deep Research",
+        "Firecrawl",
+        "Perplexity",
+        "Claude 3.5"
+      ],
+      "url": "https://shadowflow.work/blog/building-autonomous-deep-research-pipeline-webhooks",
+      "schemaJsonLd": {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "@id": "https://shadowflow.work/blog/building-autonomous-deep-research-pipeline-webhooks#article",
+            "isPartOf": {
+              "@type": "WebPage",
+              "@id": "https://shadowflow.work/blog/building-autonomous-deep-research-pipeline-webhooks"
+            },
+            "headline": "How to Build an Autonomous Deep Research Pipeline with Webhooks, Firecrawl, and Claude 3.5",
+            "description": "A step-by-step production blueprint for scraping live web intelligence, cross-referencing citations with Perplexity, and delivering automated executive briefs.",
+            "url": "https://shadowflow.work/blog/building-autonomous-deep-research-pipeline-webhooks",
+            "datePublished": "2026-10-28T08:00:00+00:00",
+            "dateModified": "2026-10-29T05:25:44.648054+00:00",
+            "author": {
+              "@type": "Person",
+              "name": "David Vance",
+              "jobTitle": "Automation Practice Lead",
+              "worksFor": {
+                "@type": "Organization",
+                "name": "Shadow Flow Technologies"
+              }
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Shadow Flow",
+              "url": "https://shadowflow.work",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://shadowflow.work/favicon.png"
+              }
+            },
+            "keywords": "Deep Research, Firecrawl, Perplexity, Claude 3.5"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://shadowflow.work/blog/building-autonomous-deep-research-pipeline-webhooks#breadcrumb",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://shadowflow.work"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Blog",
+                "item": "https://shadowflow.work/blog"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "How to Build an Autonomous Deep Research Pipeline with Webhooks, Firecrawl, and Claude 3.5",
+                "item": "https://shadowflow.work/blog/building-autonomous-deep-research-pipeline-webhooks"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

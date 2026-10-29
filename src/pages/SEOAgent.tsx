@@ -50,7 +50,7 @@ import {
 import { curatedKeywords, searchKeywords, getRelatedQuestions, KeywordData } from "@/lib/seo/keywordEngine";
 import { backlinkOpportunities, generateOutreachPitch, BacklinkOpportunity } from "@/lib/seo/backlinkEngine";
 import { aiTechNewsFeed, NewsItem } from "@/lib/seo/aiNewsEngine";
-import { saveCustomBlogPost, defaultBlogPosts } from "@/lib/seo/blogEngine";
+import { saveCustomBlogPost, defaultBlogPosts, injectInternalBacklinks, updateExistingBlogPost } from "@/lib/seo/blogEngine";
 
 export default function SEOAgent() {
   const navigate = useNavigate();
@@ -354,6 +354,55 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
         onClick: () => navigate(`/blog/${newPost.slug}`),
       },
     });
+  };
+
+  // Inject contextual internal backlinks into the article
+  const handleInjectBacklinks = () => {
+    if (!generatedMarkdown) {
+      toast.error("Please generate or enter an article first.");
+      return;
+    }
+    const withLinks = injectInternalBacklinks(generatedMarkdown, generatedMeta.slug);
+    setGeneratedMarkdown(withLinks);
+    toast.success("Injected contextual internal backlinks into article!");
+  };
+
+  // Update existing blog post in place from the Auditor tab
+  const handleUpdatePostInAuditor = () => {
+    if (!auditContent) {
+      toast.error("Content is empty.");
+      return;
+    }
+    const match = defaultBlogPosts.find(
+      (p) =>
+        p.title.toLowerCase() === auditTitle.toLowerCase() ||
+        p.slug.includes(auditKeyword.toLowerCase().replace(/\s+/g, "-"))
+    );
+    const slug = match ? match.slug : auditTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+    const updated = updateExistingBlogPost(slug, {
+      title: auditTitle,
+      content: auditContent,
+      description: auditContent.slice(0, 160).replace(/[#*`]/g, "").trim(),
+    });
+
+    if (updated) {
+      toast.success(`Updated blog post "/blog/${slug}"!`, {
+        action: {
+          label: "View Post",
+          onClick: () => navigate(`/blog/${slug}`),
+        },
+      });
+    } else {
+      saveCustomBlogPost({
+        slug,
+        title: auditTitle,
+        description: auditContent.slice(0, 160).replace(/[#*`]/g, "").trim(),
+        content: auditContent,
+        tags: [auditKeyword, "SEO Updated"],
+      });
+      toast.success(`Saved article as "/blog/${slug}"!`);
+    }
   };
 
   // Send Generated Article to Auditor Tab
@@ -738,6 +787,17 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                         variant="outline"
                         size="sm"
                         disabled={!generatedMarkdown}
+                        onClick={handleInjectBacklinks}
+                        className="text-xs gap-1.5 h-8 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                        title="Auto-inject internal links to features, templates, docs, and sister posts"
+                      >
+                        <Link2 className="w-3.5 h-3.5 text-cyan-400" />
+                        Inject Backlinks
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!generatedMarkdown}
                         onClick={handleSendToAuditor}
                         className="text-xs gap-1.5 h-8"
                       >
@@ -851,7 +911,7 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                         />
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button onClick={handleRunAudit} className="flex-1 gap-2">
                           <RefreshCw className="w-4 h-4" /> Run Deep Audit
                         </Button>
@@ -862,6 +922,14 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
                           title="Auto-replace AI buzzwords with plain human English per 82 rules"
                         >
                           <Sparkles className="w-3.5 h-3.5" /> Clean Buzzwords
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleUpdatePostInAuditor}
+                          className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 text-xs px-3"
+                          title="Save and update this content in the published blog"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-primary" /> Save Changes
                         </Button>
                       </div>
                     </CardContent>

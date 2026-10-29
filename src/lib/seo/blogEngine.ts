@@ -365,3 +365,122 @@ export function getBlogPostBySlug(slug: string): BlogPost | undefined {
   const blogs = getAllBlogPosts();
   return blogs.find(b => b.slug === slug);
 }
+
+// ============================================================================
+// Internal Cross-Backlinking Engine
+// Automatically links relevant keywords to Shadow Flow features, templates,
+// documentation, and sibling articles without over-linking.
+// ============================================================================
+
+export interface InternalLinkTarget {
+  phrase: string;
+  url: string;
+  label: string;
+}
+
+export const INTERNAL_BACKLINK_TARGETS: InternalLinkTarget[] = [
+  { phrase: 'n8n alternative', url: 'https://shadowflow.work/features', label: 'Shadow Flow n8n Alternative' },
+  { phrase: 'n8n workflows', url: 'https://shadowflow.work/features', label: 'n8n Workflow Compatibility' },
+  { phrase: 'open-source workflow automation', url: 'https://shadowflow.work/features', label: 'Open-Source Workflow Automation' },
+  { phrase: 'deep research', url: 'https://shadowflow.work/templates?search=research', label: 'Autonomous Deep Research Pipeline' },
+  { phrase: 'lead generation', url: 'https://shadowflow.work/templates?search=lead', label: 'Lead Generation & CRM Pipeline' },
+  { phrase: 'model context protocol', url: 'https://shadowflow.work/docs#mcp', label: 'Model Context Protocol (MCP)' },
+  { phrase: 'mcp tools', url: 'https://shadowflow.work/docs#mcp', label: 'MCP Tools' },
+  { phrase: 'prompt-to-flow', url: 'https://shadowflow.work/demo', label: 'Prompt-to-Flow AI Copilot' },
+  { phrase: 'ai copilot', url: 'https://shadowflow.work/demo', label: 'Shadow Flow AI Copilot' },
+  { phrase: 'zero-cost heuristic engine', url: 'https://shadowflow.work/features#heuristic', label: 'Zero-Cost Heuristic Engine' },
+  { phrase: 'local ollama', url: 'https://shadowflow.work/features#local-llm', label: 'Local Ollama Gemma 4' },
+  { phrase: 'deepseek reasoner', url: 'https://shadowflow.work/blog/deepseek-reasoner-enterprise-ai-automation', label: 'DeepSeek Reasoner Guide' },
+  { phrase: 'self-hosted ai workflows', url: 'https://shadowflow.work/blog/self-hosted-ai-workflows-vs-saas', label: 'Self-Hosted AI Workflows' },
+];
+
+/**
+ * Automatically injects internal canonical backlinks into article Markdown
+ * while protecting existing links, code blocks, and headings.
+ */
+export function injectInternalBacklinks(markdown: string, currentSlug?: string): string {
+  if (!markdown) return '';
+
+  // Extract and protect code blocks
+  const codeBlocks: string[] = [];
+  let protectedText = markdown.replace(/(```[\s\S]*?```|`[^`]+`)/g, (match) => {
+    codeBlocks.push(match);
+    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+  });
+
+  // Extract and protect existing markdown links [text](url)
+  const existingLinks: string[] = [];
+  protectedText = protectedText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match) => {
+    existingLinks.push(match);
+    return `__EXISTING_LINK_${existingLinks.length - 1}__`;
+  });
+
+  // Track applied keywords to ensure each is linked at most ONCE (prevent keyword stuffing)
+  const appliedUrls = new Set<string>();
+  if (currentSlug) {
+    appliedUrls.add(`https://shadowflow.work/blog/${currentSlug}`);
+  }
+
+  for (const target of INTERNAL_BACKLINK_TARGETS) {
+    if (appliedUrls.has(target.url)) continue;
+
+    // Word boundary regex, case-insensitive, ensuring not inside heading
+    const regex = new RegExp(`(?<!#+\\s.*)\\b(${target.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'i');
+    const match = protectedText.match(regex);
+
+    if (match && match.index !== undefined) {
+      const matchedWord = match[1];
+      protectedText =
+        protectedText.slice(0, match.index) +
+        `[${matchedWord}](${target.url})` +
+        protectedText.slice(match.index + matchedWord.length);
+      appliedUrls.add(target.url);
+    }
+  }
+
+  // Restore existing links
+  protectedText = protectedText.replace(/__EXISTING_LINK_(\d+)__/g, (_, idx) => existingLinks[parseInt(idx, 10)] || '');
+
+  // Restore code blocks
+  protectedText = protectedText.replace(/__CODE_BLOCK_(\d+)__/g, (_, idx) => codeBlocks[parseInt(idx, 10)] || '');
+
+  return protectedText;
+}
+
+/**
+ * Updates an existing blog post in place, updating its modified timestamp and content.
+ */
+export function updateExistingBlogPost(slug: string, updates: Partial<BlogPost>): BlogPost | null {
+  const all = getAllBlogPosts();
+  const existingIndex = all.findIndex(b => b.slug === slug);
+  if (existingIndex === -1) return null;
+
+  const current = all[existingIndex];
+  const updated: BlogPost = {
+    ...current,
+    ...updates,
+    slug: current.slug, // preserve primary slug identifier
+    publishedAt: updates.publishedAt || current.publishedAt,
+    content: updates.content !== undefined ? updates.content : current.content,
+    readingTimeMinutes: updates.content ? Math.ceil(updates.content.split(/\s+/).length / 200) : current.readingTimeMinutes,
+  };
+
+  savePublishedBlog(updated);
+  return updated;
+}
+
+/**
+ * Exports all active blog posts to a clean JSON string matching the production blogs.json schema.
+ */
+export function exportBlogsToJson(): string {
+  const blogs = getAllBlogPosts();
+  return JSON.stringify(
+    {
+      updatedAt: new Date().toISOString(),
+      count: blogs.length,
+      posts: blogs,
+    },
+    null,
+    2
+  );
+}

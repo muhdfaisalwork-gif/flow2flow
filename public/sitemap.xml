@@ -80,4 +80,24 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shadowflow.work/blog/building-autonomous-deep-research-pipeline-webhooks</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
