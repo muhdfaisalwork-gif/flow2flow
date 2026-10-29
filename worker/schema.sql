@@ -103,3 +103,17 @@ CREATE TABLE IF NOT EXISTS user_tfa (
 
 CREATE INDEX IF NOT EXISTS idx_user_tfa_user_id ON user_tfa(user_id);
 
+CREATE TABLE IF NOT EXISTS user_graph_memory (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  node_type TEXT NOT NULL,
+  label TEXT NOT NULL,
+  data TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_graph_memory_user_id ON user_graph_memory(user_id);
+
+

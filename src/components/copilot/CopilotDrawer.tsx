@@ -27,6 +27,7 @@ import {
   validateAndRepairWorkflow,
   type CopilotProvider,
 } from '@/lib/copilot/aiEngine';
+import { graphMemory } from '@/lib/copilot/graphMemory';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -36,6 +37,7 @@ interface Message {
   nodeCount?: number;
   repairs?: string[];
   modeUsed?: string;
+  matchedMemoryNodes?: string[];
 }
 
 export interface CopilotDrawerProps {
@@ -76,14 +78,50 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
     }
   }, [isOpen]);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content:
-        "Hi! I'm your **Shadow Flow AI Copilot**.\n\n• **Built-in Cloud AI**: Powered by Groq LPU (20 requests/day on Free, 100/day on Pro, unlimited on Max) with zero API keys needed!\n• **Zero-Cost Heuristic Mode**: Synthesizes and refactors multi-branch workflows 100% offline.\n• **BYOK & Local Ollama**: Connect OpenAI, Claude 3.5, Gemini, or local Ollama.\n• **Try Prompts**: *\"Stripe webhook to Slack channel alert\"* or *\"Connect to MCP server tool\"*.",
-    },
-  ]);
+  const [showMemoryInspector, setShowMemoryInspector] = useState(false);
+  const [memoryNodesCount, setMemoryNodesCount] = useState(() => graphMemory.getNodeCount());
+
+  const loadSavedMessages = (): Message[] => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw = localStorage.getItem('shadowflow_copilot_messages');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content:
+          "Hi! I'm your **Shadow Flow AI Copilot**.\n\n• **Shared Graph Memory**: Persists workflow knowledge, rules, and component graphs across all 3 engines.\n• **Zero-Cost Heuristic Mode**: Synthesizes and refactors multi-branch workflows 100% offline.\n• **Built-in Cloud AI**: Powered by Groq LPU with zero API keys needed!\n• **Local Ollama**: Connect Gemma 4 for private offline inference.\n• **Try Prompts**: *\"Lead generation pipeline with validation and CRM sync\"* or *\"Autonomous deep research with Firecrawl and Perplexity\"*.",
+      },
+    ];
+  };
+
+  const [messages, setMessages] = useState<Message[]>(loadSavedMessages);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('shadowflow_copilot_messages', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  const handleClearChat = () => {
+    const defaultMsg: Message[] = [
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Chat cleared. What workflow would you like to build or refactor?",
+      },
+    ];
+    setMessages(defaultMsg);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('shadowflow_copilot_messages', JSON.stringify(defaultMsg));
+    }
+  };
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -173,8 +211,10 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
         nodeCount: result.nodes.length,
         repairs: result.repairedIssues,
         modeUsed: COPILOT_MODELS[result.modeUsed]?.label || result.modeUsed,
+        matchedMemoryNodes: result.matchedMemoryNodes,
       };
       setMessages((prev) => [...prev, assistantMsg]);
+      setMemoryNodesCount(graphMemory.getNodeCount());
 
       toast({
         title: '✨ Workflow Topology Synthesized',
@@ -312,6 +352,64 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
               </span>
             </div>
           )}
+
+          {/* Graph Memory Status Banner */}
+          <div className="flex items-center justify-between px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+              <span className="text-purple-300 font-medium">
+                🧠 Graph Memory: Active ({memoryNodesCount} nodes)
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 px-1.5 text-[10px] text-purple-300 hover:text-purple-200"
+                onClick={() => setShowMemoryInspector(!showMemoryInspector)}
+              >
+                {showMemoryInspector ? 'Hide' : 'Inspect'}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+                onClick={handleClearChat}
+                title="Clear conversational transcript"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+
+          {/* Memory Inspector Drawer */}
+          {showMemoryInspector && (
+            <div className="p-2.5 rounded-md bg-background/95 border border-purple-500/30 text-[11px] space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-purple-300">
+                <span>Knowledge Graph Subgraphs</span>
+                <a
+                  href="/graph.html"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] text-cyan-400 hover:underline inline-flex items-center gap-1"
+                >
+                  View Graph (graph.html) ↗
+                </a>
+              </div>
+              <div className="max-h-32 overflow-y-auto space-y-1 pr-1 font-mono text-[10px]">
+                {graphMemory.getAllNodes().map((node) => (
+                  <div key={node.id} className="flex items-center justify-between p-1 rounded bg-muted/40 border border-border/40">
+                    <span className="font-medium text-foreground truncate max-w-[200px]" title={node.label}>
+                      {node.label}
+                    </span>
+                    <Badge variant="outline" className="text-[9px] h-3.5 px-1 capitalize">
+                      {node.type}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -349,6 +447,17 @@ const CopilotDrawer: FC<CopilotDrawerProps> = ({ isOpen, onClose, initialPrompt 
                         {message.modeUsed}
                       </Badge>
                     )}
+                  </div>
+                )}
+
+                {message.matchedMemoryNodes && message.matchedMemoryNodes.length > 0 && (
+                  <div className="mt-1.5 pt-1.5 border-t border-border/30 text-[10px] text-purple-300/90 flex items-center gap-1 flex-wrap">
+                    <span>🧠 Memory context:</span>
+                    {message.matchedMemoryNodes.slice(0, 3).map((nodeId) => (
+                      <span key={nodeId} className="font-mono text-[9px] bg-purple-950/40 px-1 py-0.5 rounded border border-purple-800/40">
+                        {nodeId}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>

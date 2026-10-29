@@ -1273,6 +1273,88 @@ export default {
       }
     }
 
+    // GET /api/copilot/memory - Fetch synced graph memory nodes for the authenticated user
+    if (url.pathname === '/api/copilot/memory' && request.method === 'GET') {
+      const user = await getAuthUser(request, env);
+      if (!user) {
+        return jsonResponse({ error: 'Unauthorized' }, 401, request);
+      }
+      try {
+        const rows = await env.DB.prepare(
+          'SELECT id, node_type as type, label, data, created_at as createdAt, updated_at as updatedAt FROM user_graph_memory WHERE user_id = ? ORDER BY updated_at DESC LIMIT 100'
+        )
+          .bind(user.id)
+          .all();
+
+        const nodes = (rows.results || []).map((row: any) => {
+          let properties = {};
+          try {
+            properties = JSON.parse(row.data || '{}');
+          } catch {}
+          return {
+            id: row.id,
+            type: row.type,
+            label: row.label,
+            properties,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+          };
+        });
+
+        return jsonResponse({ nodes, edges: [] }, 200, request);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to fetch graph memory', details: message }, 500, request);
+      }
+    }
+
+    // POST /api/copilot/memory - Upsert graph memory nodes from client
+    if (url.pathname === '/api/copilot/memory' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      if (!user) {
+        return jsonResponse({ error: 'Unauthorized' }, 401, request);
+      }
+      try {
+        const body = (await request.json()) as {
+          nodes?: Array<{ id: string; type?: string; label: string; properties?: Record<string, unknown> }>;
+        };
+        if (!body.nodes || !Array.isArray(body.nodes)) {
+          return jsonResponse({ error: 'Missing or invalid "nodes" array' }, 400, request);
+        }
+
+        const now = new Date().toISOString();
+        let inserted = 0;
+        for (const node of body.nodes) {
+          if (!node.id || !node.label) continue;
+          await env.DB.prepare(
+            `INSERT INTO user_graph_memory (id, user_id, node_type, label, data, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET
+               label = excluded.label,
+               node_type = excluded.node_type,
+               data = excluded.data,
+               updated_at = excluded.updated_at`
+          )
+            .bind(
+              node.id,
+              user.id,
+              node.type || 'concept',
+              node.label,
+              JSON.stringify(node.properties || {}),
+              now,
+              now
+            )
+            .run();
+          inserted++;
+        }
+
+        return jsonResponse({ success: true, count: inserted }, 200, request);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to save graph memory', details: message }, 500, request);
+      }
+    }
+
     // AI Prompt-to-Flow generation endpoint using Groq + Workers AI with Plan Quotas
     if (url.pathname === '/api/generate-flow' && request.method === 'POST') {
       try {

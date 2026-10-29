@@ -12,6 +12,7 @@ import {
   type RawN8nWorkflow,
   type N8nImportResult,
 } from '@/lib/importer/n8nAdapter';
+import { graphMemory } from './graphMemory';
 
 export type CopilotProvider =
   | 'builtin'
@@ -36,6 +37,7 @@ export interface CopilotSynthesisResult {
   edges: WorkflowEdge[];
   repairedIssues: string[];
   modeUsed: CopilotProvider;
+  matchedMemoryNodes?: string[];
 }
 
 export interface GraphValidationReport {
@@ -560,10 +562,14 @@ export function synthesizeWorkflowHeuristic(
   existingNodes: WorkflowNode[] = [],
   existingEdges: WorkflowEdge[] = []
 ): CopilotSynthesisResult {
+  // Check Graph Memory for matching known workflow blueprints before fallback
+  const memoryMatch = graphMemory.findMatchingTemplate(prompt);
+  const matchedMemoryNodes: string[] = memoryMatch ? [memoryMatch.id] : [];
+
   // First check if this is an iterative conversational edit on an existing canvas
   if (existingNodes.length > 0) {
     const edited = applyConversationalEdit(prompt, existingNodes, existingEdges);
-    if (edited) return edited;
+    if (edited) return { ...edited, matchedMemoryNodes };
   }
 
   const p = prompt.toLowerCase();
@@ -913,13 +919,26 @@ export function synthesizeWorkflowHeuristic(
       .slice(0, 48)
       .trim() || 'AI Synthesized Workflow';
 
+  const explanation = memoryMatch
+    ? `Synthesized a **${repaired.nodes.length}-node** workflow topology (${repaired.edges.length} connections) with Kahn's topological auto-layout, aligned with graph memory blueprint: **${memoryMatch.label}**.`
+    : `Synthesized a **${repaired.nodes.length}-node** workflow topology (${repaired.edges.length} connections) with Kahn's topological auto-layout and self-healing verification.`;
+
+  graphMemory.recordInteraction(
+    prompt,
+    explanation,
+    repaired.nodes,
+    repaired.edges,
+    generatedName
+  );
+
   return {
     name: generatedName.charAt(0).toUpperCase() + generatedName.slice(1),
-    explanation: `Synthesized a **${repaired.nodes.length}-node** workflow topology (${repaired.edges.length} connections) with Kahn's topological auto-layout and self-healing verification.`,
+    explanation,
     nodes: repaired.nodes,
     edges: repaired.edges,
     repairedIssues: repaired.repairsApplied,
     modeUsed: 'heuristic',
+    matchedMemoryNodes,
   };
 }
 
@@ -946,7 +965,10 @@ export async function synthesizeWorkflowWithAI(
     return synthesizeWorkflowHeuristic(prompt, existingNodes, existingEdges);
   }
 
-  const systemInstruction = `You are the Shadow Flow Prompt-to-Flow Architect. Return ONLY valid JSON matching the n8n workflow structure:
+  const memoryQuery = graphMemory.queryGraph(prompt);
+  const matchedMemoryNodes = memoryQuery.matchedNodeIds;
+
+  const baseInstruction = `You are the Shadow Flow Prompt-to-Flow Architect. Return ONLY valid JSON matching the n8n workflow structure:
 {
   "name": "Workflow Title",
   "description": "Concise explanation of the workflow",
@@ -957,6 +979,10 @@ export async function synthesizeWorkflowWithAI(
     "Webhook Trigger": { "main": [[{ "node": "Next Node Name", "type": "main", "index": 0 }]] }
   }
 }`;
+
+  const systemInstruction = memoryQuery.context
+    ? `${baseInstruction}\n\n${memoryQuery.context}`
+    : baseInstruction;
 
   try {
     let rawJsonText = '';
@@ -1081,6 +1107,7 @@ export async function synthesizeWorkflowWithAI(
           edges: fallback.edges,
           repairedIssues: fallback.repairedIssues,
           modeUsed: config.provider,
+          matchedMemoryNodes,
         };
       }
     } catch {
@@ -1093,6 +1120,7 @@ export async function synthesizeWorkflowWithAI(
           edges: fallback.edges,
           repairedIssues: fallback.repairedIssues,
           modeUsed: config.provider,
+          matchedMemoryNodes,
         };
       }
       throw new Error('AI response did not contain recognizable workflow JSON');
@@ -1104,6 +1132,14 @@ export async function synthesizeWorkflowWithAI(
       ? `${parsedN8n.description}\n\n**Pipeline Architecture:**\n${stepList}`
       : `Generated ${repaired.nodes.length} nodes with topological auto-layout:\n\n${stepList}`;
 
+    graphMemory.recordInteraction(
+      prompt,
+      fullExplanation,
+      repaired.nodes,
+      repaired.edges,
+      parsedN8n.name
+    );
+
     return {
       name: parsedN8n.name || 'Lead Generation Workflow',
       explanation: fullExplanation,
@@ -1111,6 +1147,7 @@ export async function synthesizeWorkflowWithAI(
       edges: repaired.edges,
       repairedIssues: repaired.repairsApplied,
       modeUsed: config.provider,
+      matchedMemoryNodes,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
