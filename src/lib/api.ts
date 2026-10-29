@@ -302,4 +302,33 @@ export const d1Api = {
       body: JSON.stringify(payload),
     });
   },
+
+  // Edge D1 & Dynamic Blog Endpoints
+  async getBlogs(): Promise<{ posts: Record<string, unknown>[] }> {
+    return apiFetch<{ posts: Record<string, unknown>[] }>('/api/blogs');
+  },
+
+  async getBlogBySlug(slug: string): Promise<{ post: Record<string, unknown> | null }> {
+    return apiFetch<{ post: Record<string, unknown> | null }>(`/api/blogs/${slug}`);
+  },
+
+  async publishBlog(post: Record<string, unknown>): Promise<{ success: boolean; slug?: string }> {
+    return apiFetch<{ success: boolean; slug?: string }>('/api/blogs', {
+      method: 'POST',
+      body: JSON.stringify(post),
+    });
+  },
+
+  async generateAiBlog(payload: { topic: string; keyword?: string; audience?: string }): Promise<{
+    success: boolean;
+    article: { title: string; excerpt: string; content: string; slug: string };
+  }> {
+    return apiFetch<{
+      success: boolean;
+      article: { title: string; excerpt: string; content: string; slug: string };
+    }>('/api/seo/generate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };

@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
-import { getAllBlogPosts, BlogPost } from "@/lib/seo/blogEngine";
+import { getAllBlogPosts, fetchDynamicBlogs, BlogPost } from "@/lib/seo/blogEngine";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,27 @@ import {
 export default function Blog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [posts, setPosts] = useState<BlogPost[]>(() => getAllBlogPosts());
+  const [isLoading, setIsLoading] = useState(false);
 
-  const posts = useMemo(() => getAllBlogPosts(), []);
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    fetchDynamicBlogs()
+      .then((dynamicPosts) => {
+        if (isMounted && dynamicPosts.length > 0) {
+          setPosts(dynamicPosts);
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch dynamic blogs:", err))
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const categories = useMemo(() => {
     const set = new Set<string>(["All"]);
@@ -81,7 +100,7 @@ export default function Blog() {
                     Powered by Shadow Flow SEO Agent Studio
                   </h3>
                   <Badge variant="outline" className="text-xs bg-background/50">
-                    Live Engine
+                    {isLoading ? "Syncing Engine..." : `${posts.length} Articles Live`}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground max-w-2xl">

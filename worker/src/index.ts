@@ -1581,6 +1581,253 @@ export default {
       }
     }
 
+    // ------------------------------------------------------------------------
+    // BLOGS & AUTONOMOUS SEO ENGINE ENDPOINTS: /api/blogs and /api/seo/*
+    // ------------------------------------------------------------------------
+
+    // GET /api/blogs - List all published technical articles
+    if (url.pathname === '/api/blogs' && request.method === 'GET') {
+      try {
+        const rows = await env.DB.prepare(
+          'SELECT id, slug, title, excerpt, category, published_at as publishedAt, updated_at as updatedAt, reading_time_minutes as readingTimeMinutes, author, author_role as authorRole, target_keyword as targetKeyword, tags, schema_json_ld as schemaJsonLd FROM blogs ORDER BY published_at DESC'
+        ).all();
+
+        const posts = (rows.results || []).map((row: any) => {
+          let tags = [];
+          let schemaJsonLd = {};
+          try { tags = JSON.parse(row.tags || '[]'); } catch {}
+          try { schemaJsonLd = JSON.parse(row.schemaJsonLd || '{}'); } catch {}
+
+          return {
+            ...row,
+            tags,
+            schemaJsonLd,
+            readTime: `${row.readingTimeMinutes || 6} min read`,
+            url: `https://shadowflow.work/blog/${row.slug}`,
+          };
+        });
+
+        return jsonResponse(
+          { success: true, count: posts.length, posts },
+          200,
+          request,
+          { 'Cache-Control': 'public, max-age=120, s-maxage=300' }
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to fetch blogs', details: message }, 500, request);
+      }
+    }
+
+    // GET /api/blogs/:slug - Get single blog post by slug
+    if (url.pathname.startsWith('/api/blogs/') && request.method === 'GET') {
+      const slug = url.pathname.slice('/api/blogs/'.length).trim();
+      try {
+        const row = (await env.DB.prepare(
+          'SELECT id, slug, title, excerpt, content, category, published_at as publishedAt, updated_at as updatedAt, reading_time_minutes as readingTimeMinutes, author, author_role as authorRole, target_keyword as targetKeyword, tags, schema_json_ld as schemaJsonLd FROM blogs WHERE slug = ?'
+        ).bind(slug).first()) as any;
+
+        if (!row) {
+          return jsonResponse({ error: 'Blog post not found' }, 404, request);
+        }
+
+        let tags = [];
+        let schemaJsonLd = {};
+        try { tags = JSON.parse(row.tags || '[]'); } catch {}
+        try { schemaJsonLd = JSON.parse(row.schemaJsonLd || '{}'); } catch {}
+
+        return jsonResponse(
+          {
+            success: true,
+            post: {
+              ...row,
+              tags,
+              schemaJsonLd,
+              readTime: `${row.readingTimeMinutes || 6} min read`,
+              url: `https://shadowflow.work/blog/${row.slug}`,
+            },
+          },
+          200,
+          request,
+          { 'Cache-Control': 'public, max-age=120, s-maxage=300' }
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to fetch blog post', details: message }, 500, request);
+      }
+    }
+
+    // POST /api/blogs - Create or update a blog post
+    if (url.pathname === '/api/blogs' && request.method === 'POST') {
+      try {
+        const body = (await request.json()) as any;
+        const slug = body.slug?.trim();
+        const title = body.title?.trim();
+        const content = body.content?.trim();
+
+        if (!slug || !title || !content) {
+          return jsonResponse({ error: 'Missing required fields: slug, title, content' }, 400, request);
+        }
+
+        const id = body.id || `blog_${slug}`;
+        const excerpt = body.excerpt || body.description || content.slice(0, 160).replace(/[#*`]/g, '').trim();
+        const category = body.category || 'AI Automation';
+        const now = new Date().toISOString();
+        const publishedAt = body.publishedAt || body.published_at || now.split('T')[0];
+        const readingTime = body.readingTimeMinutes || Math.max(1, Math.ceil(content.split(/\s+/).length / 200));
+        const author = body.author || 'Faisal Muhammad';
+        const authorRole = body.authorRole || body.author_role || 'Chief AI Architect';
+        const targetKeyword = body.targetKeyword || body.target_keyword || slug.replace(/-/g, ' ');
+        const tagsJson = JSON.stringify(body.tags || [targetKeyword]);
+        const schemaJson = JSON.stringify(body.schemaJsonLd || {});
+
+        await env.DB.prepare(
+          `INSERT INTO blogs (id, slug, title, excerpt, content, category, published_at, updated_at, reading_time_minutes, author, author_role, target_keyword, tags, schema_json_ld)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(slug) DO UPDATE SET
+             title = excluded.title,
+             excerpt = excluded.excerpt,
+             content = excluded.content,
+             category = excluded.category,
+             updated_at = excluded.updated_at,
+             reading_time_minutes = excluded.reading_time_minutes,
+             author = excluded.author,
+             author_role = excluded.author_role,
+             target_keyword = excluded.target_keyword,
+             tags = excluded.tags,
+             schema_json_ld = excluded.schema_json_ld`
+        )
+          .bind(
+            id,
+            slug,
+            title,
+            excerpt,
+            content,
+            category,
+            publishedAt,
+            now,
+            readingTime,
+            author,
+            authorRole,
+            targetKeyword,
+            tagsJson,
+            schemaJson
+          )
+          .run();
+
+        return jsonResponse(
+          {
+            success: true,
+            message: `Article "${title}" saved successfully`,
+            post: { id, slug, title, publishedAt, updatedAt: now },
+          },
+          200,
+          request
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to save blog post', details: message }, 500, request);
+      }
+    }
+
+    // POST /api/seo/generate - Autonomous Edge AI Blog Article Writer
+    if (url.pathname === '/api/seo/generate' && request.method === 'POST') {
+      try {
+        const body = (await request.json()) as {
+          topic?: string;
+          keyword?: string;
+          tone?: string;
+          audience?: string;
+        };
+
+        const topic = body.topic?.trim();
+        const keyword = body.keyword?.trim() || topic?.slice(0, 30);
+
+        if (!topic) {
+          return jsonResponse({ error: 'Topic is required' }, 400, request);
+        }
+
+        const systemPrompt = `You are an elite principal systems architect writing for Shadow Flow (https://shadowflow.work), an open-source visual workflow automation platform.
+Write a deep-dive, publication-ready technical engineering article.
+Follow strict human-natural writing standards:
+1. NEVER use generic AI buzzwords: do not use delve, pivotal, robust, multifaceted, nuanced, transformative, groundbreaking, revolutionary, landscape, tapestry, realm, testament, fostering, harnessing, leveraging.
+2. NEVER include chatbot greetings or sign-offs (no "Certainly!", "Let's dive in", "In today's digital landscape", or "I hope this helps").
+3. Use plain verbs: 'use' instead of 'leverage' or 'utilize', 'start' instead of 'commence', 'show' instead of 'showcase'.
+4. Structure:
+   - Compelling H1 Title
+   - Concrete 2-3 paragraph problem statement with specific numbers/latencies/costs.
+   - 3-4 deep architectural sections with H2 headings.
+   - Include realistic code, JSON, or configuration snippets.
+   - Mention how Shadow Flow provides visual DAG execution, native MCP adapters, and local Ollama inference.
+   - Natural conclusion without an announcement like "In conclusion".
+Format: Clean GitHub-flavored Markdown.`;
+
+        const userPrompt = `Topic: "${topic}"
+Target Keyword: "${keyword}"
+Audience: ${body.audience || 'Engineers, DevOps & Automation Architects'}
+Tone: ${body.tone || 'authoritative, practical, and highly technical'}
+
+Write the full article now in Markdown.`;
+
+        let generatedMarkdown = '';
+        let modelUsed = 'Workers AI';
+
+        if (env.AI) {
+          try {
+            const aiRes = (await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+              ],
+              max_tokens: 3000,
+            })) as { response?: string };
+
+            if (aiRes.response) {
+              generatedMarkdown = aiRes.response;
+              modelUsed = '@cf/meta/llama-3.1-8b-instruct';
+            }
+          } catch (e) {
+            console.warn('[Workers AI] Failed, falling back to Groq/Groq AI:', e);
+          }
+        }
+
+        if (!generatedMarkdown) {
+          const groqRes = await callGroqAI([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ], false, env);
+          generatedMarkdown = groqRes.content;
+          modelUsed = groqRes.model;
+        }
+
+        const slug = keyword.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const excerpt = generatedMarkdown
+          .split('\n')
+          .find((line) => line.trim().length > 40 && !line.startsWith('#'))
+          ?.replace(/[*_#`]/g, '')
+          .slice(0, 160)
+          .trim() || `Technical deep dive into ${topic}.`;
+
+        return jsonResponse(
+          {
+            success: true,
+            title: topic,
+            slug,
+            excerpt,
+            content: generatedMarkdown,
+            targetKeyword: keyword,
+            model: modelUsed,
+            readingTimeMinutes: Math.max(1, Math.ceil(generatedMarkdown.split(/\s+/).length / 200)),
+          },
+          200,
+          request
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'SEO article generation failed', details: message }, 500, request);
+      }
+    }
+
     // POST /api/email/send - Dispatch transactional/support emails via Resend
     if (url.pathname === '/api/email/send' && request.method === 'POST') {
       try {

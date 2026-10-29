@@ -303,7 +303,55 @@ In under 45 seconds, a cited market intelligence report lands directly in your S
 
 const STORAGE_KEY = 'shadowflow_published_blogs';
 
+let dynamicPostsCache: BlogPost[] | null = null;
+
+export function normalizeBlogPost(p: Record<string, unknown>): BlogPost {
+  let authorName = 'Shadow Flow Contributor';
+  let authorRole = 'Technical Contributor';
+  let authorAvatar: string | undefined;
+
+  const author = p.author;
+  if (typeof author === 'object' && author !== null) {
+    const authorObj = author as Record<string, unknown>;
+    authorName = (authorObj.name as string) || authorName;
+    authorRole = (authorObj.role as string) || authorRole;
+    authorAvatar = authorObj.avatar as string | undefined;
+  } else if (typeof author === 'string' && author.trim()) {
+    authorName = author.trim();
+  }
+
+  const tags = Array.isArray(p.tags)
+    ? (p.tags as string[])
+    : typeof p.tags === 'string'
+    ? p.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+    : [];
+
+  const readingTime = Number(p.readingTimeMinutes || p.reading_time_minutes) || 6;
+  const publishedDate = String(p.publishedAt || p.published_at || new Date().toISOString().split('T')[0]).split('T')[0];
+
+  return {
+    slug: String(p.slug || ''),
+    title: String(p.title || 'Untitled Article'),
+    excerpt: String(p.excerpt || p.description || ''),
+    description: String(p.description || p.excerpt || ''),
+    content: String(p.content || ''),
+    category: String(p.category || 'AI Agents'),
+    publishedAt: publishedDate,
+    readingTimeMinutes: readingTime,
+    readTime: (p.readTime as string) || `${readingTime} min read`,
+    author: authorAvatar ? { name: authorName, role: authorRole, avatar: authorAvatar } : authorName,
+    authorRole: (p.authorRole as string) || (p.author_role as string) || authorRole,
+    targetKeyword: (p.targetKeyword as string) || (p.target_keyword as string) || (tags[0] || 'AI Automation'),
+    tags,
+    featured: Boolean(p.featured),
+  };
+}
+
 export function getPublishedBlogs(): BlogPost[] {
+  if (dynamicPostsCache && dynamicPostsCache.length > 0) {
+    return dynamicPostsCache;
+  }
+
   if (typeof window === 'undefined') return PRESET_BLOG_POSTS;
 
   try {
@@ -317,12 +365,19 @@ export function getPublishedBlogs(): BlogPost[] {
 }
 
 export function savePublishedBlog(post: BlogPost): void {
+  const normalized = normalizeBlogPost(post as unknown as Record<string, unknown>);
+
+  // Update in-memory cache
+  if (dynamicPostsCache) {
+    dynamicPostsCache = [normalized, ...dynamicPostsCache.filter(p => p.slug !== normalized.slug)];
+  }
+
   if (typeof window === 'undefined') return;
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const existing: BlogPost[] = raw ? JSON.parse(raw) : [];
-    const updated = [post, ...existing.filter(p => p.slug !== post.slug)];
+    const updated = [normalized, ...existing.filter(p => p.slug !== normalized.slug)];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   } catch (err) {
     console.error('Failed to save published blog:', err);
@@ -339,6 +394,110 @@ export function getAllBlogPosts(): BlogPost[] {
     author: typeof p.author === 'object' ? p.author.name : p.author,
     authorRole: p.authorRole || (typeof p.author === 'object' ? p.author.role : 'Contributor'),
   }));
+}
+
+/**
+ * Dynamically fetches published blogs from the static CDN index (/blogs.json),
+ * D1 database fallback (/api/blogs), and local custom drafts.
+ */
+export async function fetchDynamicBlogs(): Promise<BlogPost[]> {
+  const mergedMap = new Map<string, BlogPost>();
+
+  // 1. Seed with PRESET_BLOG_POSTS
+  for (const preset of PRESET_BLOG_POSTS) {
+    mergedMap.set(preset.slug, normalizeBlogPost(preset as unknown as Record<string, unknown>));
+  }
+
+  // 2. Fetch from /blogs.json (static daily JSON maintained by autonomous SEO Agent)
+  try {
+    const res = await fetch('/blogs.json?v=' + Date.now().toString().slice(0, 7), {
+      headers: { Accept: 'application/json' },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const posts: Record<string, unknown>[] = data.posts || [];
+      for (const p of posts) {
+        if (p && p.slug) {
+          mergedMap.set(String(p.slug), normalizeBlogPost(p));
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[SEO Engine] Failed to fetch /blogs.json:', err);
+  }
+
+  // 3. Fallback/Supplement from Cloudflare D1 /api/blogs
+  try {
+    const d1Res = await fetch('/api/blogs', {
+      headers: { Accept: 'application/json' },
+    });
+    if (d1Res.ok) {
+      const d1Data = await d1Res.json();
+      const posts: Record<string, unknown>[] = d1Data.posts || [];
+      for (const p of posts) {
+        if (p && p.slug) {
+          mergedMap.set(String(p.slug), normalizeBlogPost(p));
+        }
+      }
+    }
+  } catch {
+    // D1 optional fallback
+  }
+
+  // 4. Merge local browser drafts
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const localPosts: Record<string, unknown>[] = JSON.parse(raw);
+        for (const p of localPosts) {
+          if (p && p.slug) {
+            mergedMap.set(String(p.slug), normalizeBlogPost(p));
+          }
+        }
+      }
+    } catch {
+      // Ignore localStorage parse errors
+    }
+  }
+
+  const allPosts = Array.from(mergedMap.values()).sort((a, b) => {
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+  });
+
+  dynamicPostsCache = allPosts;
+  return allPosts;
+}
+
+/**
+ * Looks up a blog post by slug, dynamically fetching from CDN or Edge D1 if not yet in memory.
+ */
+export async function fetchBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
+  if (dynamicPostsCache) {
+    const found = dynamicPostsCache.find(b => b.slug === slug);
+    if (found) return found;
+  }
+
+  const all = await fetchDynamicBlogs();
+  const found = all.find(b => b.slug === slug);
+  if (found) return found;
+
+  // Single D1 lookup fallback
+  try {
+    const res = await fetch(`/api/blogs/${encodeURIComponent(slug)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.post) {
+        const normalized = normalizeBlogPost(data.post as Record<string, unknown>);
+        dynamicPostsCache = [normalized, ...(dynamicPostsCache || [])];
+        return normalized;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return undefined;
 }
 
 export function saveCustomBlogPost(post: Partial<BlogPost> & { description?: string }): void {

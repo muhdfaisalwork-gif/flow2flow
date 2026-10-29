@@ -51,6 +51,7 @@ import { curatedKeywords, searchKeywords, getRelatedQuestions, KeywordData } fro
 import { backlinkOpportunities, generateOutreachPitch, BacklinkOpportunity } from "@/lib/seo/backlinkEngine";
 import { aiTechNewsFeed, NewsItem } from "@/lib/seo/aiNewsEngine";
 import { saveCustomBlogPost, defaultBlogPosts, injectInternalBacklinks, updateExistingBlogPost } from "@/lib/seo/blogEngine";
+import { d1Api } from "@/lib/api";
 
 export default function SEOAgent() {
   const navigate = useNavigate();
@@ -141,14 +142,38 @@ export default function SEOAgent() {
 
     for (let i = 0; i < steps.length; i++) {
       setGenerationStep(steps[i]);
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 400));
     }
 
-    const generatedSlug = kw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const artTitle = `${topic}: Architecture, Code Patterns, and Production Benchmarks (${new Date().getFullYear()})`;
-    const artDesc = `A technical guide to ${topic}, covering pipeline design, node interfaces, benchmarks, and self-hosted deployment on Shadow Flow.`;
+    let generatedSlug = kw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    let artTitle = `${topic}: Architecture, Code Patterns, and Production Benchmarks (${new Date().getFullYear()})`;
+    let artDesc = `A technical guide to ${topic}, covering pipeline design, node interfaces, benchmarks, and self-hosted deployment on Shadow Flow.`;
+    let markdownBody = "";
 
-    const markdownBody = `# ${artTitle}
+    // Attempt live Workers AI generation first
+    try {
+      setGenerationStep("Running Cloudflare Workers AI edge model...");
+      const aiResult = await d1Api.generateAiBlog({
+        topic,
+        keyword: kw,
+        audience: targetAudience,
+      });
+
+      if (aiResult?.article?.content) {
+        artTitle = aiResult.article.title || artTitle;
+        artDesc = aiResult.article.excerpt || artDesc;
+        markdownBody = aiResult.article.content;
+        if (aiResult.article.slug) {
+          generatedSlug = aiResult.article.slug;
+        }
+        markdownBody = injectInternalBacklinks(markdownBody, generatedSlug);
+      }
+    } catch (err) {
+      console.warn("Workers AI live generation unavailable, using deterministic template:", err);
+    }
+
+    if (!markdownBody) {
+      markdownBody = `# ${artTitle}
 
 > **Overview:** Running ${topic} in production requires clear boundary checks, deterministic retries, and low-latency node execution. This guide examines real performance benchmarks, implementation patterns, and code examples using Shadow Flow.
 
@@ -242,6 +267,7 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
 - 📖 Read the [Documentation](/docs)
 - 🚀 Test this workflow directly in our [Live Demo Canvas](/demo)
 `;
+    }
 
     setGeneratedMarkdown(markdownBody);
     setGeneratedMeta({
@@ -329,7 +355,7 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
   };
 
   // Publish Generated Article to Blog Store
-  const handlePublishToBlog = () => {
+  const handlePublishToBlog = async () => {
     if (!generatedMarkdown || !generatedMeta.title) {
       toast.error("Please generate an article first.");
       return;
@@ -348,12 +374,24 @@ Setting up ${topic} does not require rebuilding your backend stack. With Shadow 
     };
 
     saveCustomBlogPost(newPost);
-    toast.success("Article successfully published to Live Blog!", {
-      action: {
-        label: "View Post",
-        onClick: () => navigate(`/blog/${newPost.slug}`),
-      },
-    });
+
+    try {
+      await d1Api.publishBlog(newPost);
+      toast.success("Article successfully published to Live Blog and Edge D1 Database!", {
+        action: {
+          label: "View Post",
+          onClick: () => navigate(`/blog/${newPost.slug}`),
+        },
+      });
+    } catch (err) {
+      console.warn("D1 edge sync deferred, saved to local cache:", err);
+      toast.success("Article successfully published to Live Blog!", {
+        action: {
+          label: "View Post",
+          onClick: () => navigate(`/blog/${newPost.slug}`),
+        },
+      });
+    }
   };
 
   // Inject contextual internal backlinks into the article

@@ -13,6 +13,8 @@
 
 ## Technical Engineering Blog
 
+- [Fixing Broken AI Pipelines for Free: Deterministic Graph Repair with the Zero-Cost Heuristic Engine](https://shadowflow.work/blog/deterministic-graph-repair-zero-cost-heuristic-engine): Why relying on recursive LLM calls to fix syntax errors is expensive and slow, and how deterministic graph analysis resolves missing connectors instantly.
+- [Serverless DAG Orchestration: Sub-50ms Workflow Execution on Cloudflare Workers and D1](https://shadowflow.work/blog/serverless-dag-orchestration-cloudflare-workers-d1): How running directed acyclic graph execution on Cloudflare edge isolates memory, prevents container cold starts, and scales without VM overhead.
 - [Migrating from n8n to Shadow Flow: 100% Apache 2.0 Freedom with Zero Workflow Re-Writes](https://shadowflow.work/blog/migrating-from-n8n-to-shadow-flow-guide): A comprehensive migration playbook showing how Shadow Flow's Universal n8n Importer and Kahn auto-layout preserve your existing node configurations and trigger bindings.
 - [Model Context Protocol (MCP) in Production: Wiring Real-World Tools into Drag-and-Drop AI Pipelines](https://shadowflow.work/blog/model-context-protocol-mcp-visual-workflows): An architectural deep dive into connecting Anthropic's Model Context Protocol (MCP) servers to visual DAG nodes for secure tool-augmented multi-agent execution.
 - [Building 100% Offline AI Workflows with Local Ollama, Gemma 4, and Zero-Cost Heuristics](https://shadowflow.work/blog/building-offline-ai-workflows-local-ollama-gemma4): How to build resilient visual automation pipelines that run completely offline with private Ollama inference and deterministic graph repair with $0.00 cloud API bills.

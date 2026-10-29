@@ -1,0 +1,45 @@
+name: Shadow Flow Autonomous SEO & Editorial Engine
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # Daily at 06:00 UTC
+  workflow_dispatch:     # Allows manual trigger anytime from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  seo_agent:
+    name: Autonomous Content Generation & Freshness Cycle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Autonomous 80/20 SEO Cycle
+        run: |
+          python scripts/seo_agent.py run --mode auto
+
+      - name: Run 82 Humanizer & Quality Audit
+        run: |
+          python scripts/seo_agent.py audit
+
+      - name: Commit and Push New Articles
+        run: |
+          git config user.name "ShadowFlow SEO Agent"
+          git config user.email "support@shadowflow.work"
+          git add public/blogs.json public/sitemap.xml public/llms.txt
+          if git diff --staged --quiet; then
+            echo "No new changes or articles to commit."
+          else
+            git commit -m "chore(seo): daily autonomous content refresh [skip ci]"
+            git push origin main
+          fi

@@ -1,8 +1,14 @@
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
-import { getBlogPostBySlug, getAllBlogPosts } from "@/lib/seo/blogEngine";
+import {
+  getBlogPostBySlug,
+  getAllBlogPosts,
+  fetchBlogPostBySlug,
+  fetchDynamicBlogs,
+  BlogPost as BlogPostType,
+} from "@/lib/seo/blogEngine";
 import { generateTechArticleSchema } from "@/lib/seo/seoEngine";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +25,7 @@ import {
   CheckCircle2,
   BookOpen,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,15 +33,66 @@ export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
-  const post = useMemo(() => {
-    if (!slug) return undefined;
-    return getBlogPostBySlug(slug);
+  const [post, setPost] = useState<BlogPostType | undefined>(() => (slug ? getBlogPostBySlug(slug) : undefined));
+  const [allPosts, setAllPosts] = useState<BlogPostType[]>(() => getAllBlogPosts());
+  const [isLoading, setIsLoading] = useState<boolean>(!post);
+
+  useEffect(() => {
+    if (!slug) return;
+    let isMounted = true;
+
+    const existing = getBlogPostBySlug(slug);
+    if (existing) {
+      setPost(existing);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
+    fetchBlogPostBySlug(slug)
+      .then((found) => {
+        if (!isMounted) return;
+        if (found) {
+          setPost(found);
+        }
+      })
+      .catch((err) => console.warn("Failed to load article by slug:", err))
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    fetchDynamicBlogs()
+      .then((dynamicPosts) => {
+        if (isMounted && dynamicPosts.length > 0) {
+          setAllPosts(dynamicPosts);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
 
   const relatedPosts = useMemo(() => {
-    const all = getAllBlogPosts();
-    return all.filter((p) => p.slug !== slug).slice(0, 3);
-  }, [slug]);
+    return allPosts.filter((p) => p.slug !== slug).slice(0, 3);
+  }, [allPosts, slug]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <Header />
+        <main className="flex-1 pt-32 pb-20 flex items-center justify-center">
+          <div className="text-center p-8 max-w-md">
+            <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-4" />
+            <h2 className="text-lg font-semibold mb-1">Loading Technical Deep Dive...</h2>
+            <p className="text-xs text-muted-foreground">Retrieving article markdown and verification schemas</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!post) {
     return (

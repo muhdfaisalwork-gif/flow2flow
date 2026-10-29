@@ -118,4 +118,24 @@ CREATE TABLE IF NOT EXISTS user_graph_memory (
 
 CREATE INDEX IF NOT EXISTS idx_graph_memory_user_id ON user_graph_memory(user_id);
 
+CREATE TABLE IF NOT EXISTS blogs (
+  id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  excerpt TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'AI Automation',
+  published_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  reading_time_minutes INTEGER NOT NULL DEFAULT 6,
+  author TEXT NOT NULL DEFAULT 'Faisal Muhammad',
+  author_role TEXT NOT NULL DEFAULT 'Chief AI Architect',
+  target_keyword TEXT NOT NULL,
+  tags TEXT NOT NULL DEFAULT '[]',
+  schema_json_ld TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_blogs_slug ON blogs(slug);
+CREATE INDEX IF NOT EXISTS idx_blogs_published_at ON blogs(published_at DESC);
+
 
