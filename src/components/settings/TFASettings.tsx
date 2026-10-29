@@ -64,6 +64,26 @@ export function TFASettings() {
   const handleSetupEmail = async () => {
     await initializeTFA();
     setSetupMethod('email');
+    if (d1Api.getToken()) {
+      setIsSendingCode(true);
+      try {
+        const res = await d1Api.setupEmailTFA();
+        toast({
+          title: 'Code sent',
+          description: res.message || 'Verification code sent to your email',
+        });
+      } catch (error) {
+        console.error('Error setting up Email 2FA:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Failed to send code',
+          description: error instanceof Error ? error.message : 'Please try again',
+        });
+      } finally {
+        setIsSendingCode(false);
+      }
+      return;
+    }
     await sendCode('email');
   };
 
@@ -113,7 +133,11 @@ export function TFASettings() {
     
     try {
       if (d1Api.getToken()) {
-        const response = await d1Api.verifyAndEnableTFA(verificationCode, setupMethod);
+        const response = await d1Api.verifyAndEnableTFA(
+          verificationCode,
+          setupMethod === 'totp' ? (totpSecret || undefined) : undefined,
+          setupMethod as 'totp' | 'email'
+        );
         if (response.success) {
           if (response.backupCodes && response.backupCodes.length > 0) {
             setBackupCodes(response.backupCodes);

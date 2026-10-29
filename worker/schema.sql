@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS user_tfa (
   secret TEXT NOT NULL,
   backup_codes TEXT NOT NULL DEFAULT '[]',
   preferred_method TEXT NOT NULL DEFAULT 'totp',
+  email_otp TEXT,
+  email_otp_expires_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

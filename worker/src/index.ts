@@ -328,6 +328,80 @@ async function verifyBackupCode(code: string, hashedCodes: string[]): Promise<{ 
   return { valid: false, remainingHashedCodes: hashedCodes };
 }
 
+function generateNumericOTP(length = 6): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  let otp = '';
+  for (let i = 0; i < length; i++) {
+    otp += (bytes[i] % 10).toString();
+  }
+  return otp;
+}
+
+function maskEmail(email: string): string {
+  const parts = email.split('@');
+  if (parts.length !== 2) return email;
+  const name = parts[0];
+  const domain = parts[1];
+  const maskedName = name.length <= 2 ? name[0] + '***' : name[0] + '***' + name[name.length - 1];
+  return `${maskedName}@${domain}`;
+}
+
+async function send2FAEmail(env: Env, toEmail: string, code: string): Promise<boolean> {
+  if (!env.RESEND_API_KEY) {
+    console.warn('[2FA] RESEND_API_KEY not configured; cannot deliver email code');
+    return false;
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f17; color: #f1f5f9; padding: 24px; margin: 0; }
+    .card { background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 32px; max-width: 480px; margin: 0 auto; }
+    .logo { color: #10b981; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; margin-bottom: 24px; }
+    .title { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ffffff; }
+    .desc { font-size: 14px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
+    .code-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px; text-align: center; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #38bdf8; font-family: monospace; margin-bottom: 24px; }
+    .expiry { font-size: 12px; color: #64748b; text-align: center; margin-bottom: 24px; }
+    .footer { font-size: 11px; color: #475569; border-top: 1px solid #1f2937; padding-top: 16px; margin-top: 24px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">⚡ Shadow Flow Security</div>
+    <div class="title">Two-Factor Authentication Code</div>
+    <p class="desc">You are signing in to your Shadow Flow account. Use the one-time verification code below to verify your identity.</p>
+    <div class="code-box">${code}</div>
+    <div class="expiry">This code expires in 10 minutes. If you did not request this verification, please secure your password.</div>
+    <div class="footer">Shadow Flow — Serverless Edge Automation Platform (shadowflow.work)</div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: 'Shadow Flow Security <support@shadowflow.work>',
+        to: toEmail,
+        subject: `Your Shadow Flow Verification Code: ${code}`,
+        html,
+        text: `Your Shadow Flow verification code is: ${code}. It expires in 10 minutes.`,
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[2FA] Failed to dispatch email via Resend:', err);
+    return false;
+  }
+}
+
 async function getEffectiveUserId(request: Request, env: Env): Promise<{ userId: string; isAuthenticated: boolean }> {
   const user = await getAuthUser(request, env);
   if (user) {
@@ -548,10 +622,19 @@ export default {
 
         // Check if user has 2FA enabled
         const tfaRow = (await env.DB.prepare(
-          'SELECT enabled, secret, backup_codes FROM user_tfa WHERE user_id = ?'
-        ).bind(row.id).first()) as { enabled: number; secret: string; backup_codes: string } | null;
+          'SELECT enabled, secret, backup_codes, preferred_method, email_otp, email_otp_expires_at FROM user_tfa WHERE user_id = ?'
+        ).bind(row.id).first()) as {
+          enabled: number;
+          secret: string;
+          backup_codes: string;
+          preferred_method: string;
+          email_otp?: string;
+          email_otp_expires_at?: string;
+        } | null;
 
         if (tfaRow && tfaRow.enabled) {
+          const method = tfaRow.preferred_method || 'totp';
+
           if (!tfaCode) {
             // Issue short-lived 2FA challenge token (valid for 5 minutes)
             if (!env.JWT_SECRET) {
@@ -565,19 +648,39 @@ export default {
               exp: Math.floor(Date.now() / 1000) + 300,
             }, env.JWT_SECRET);
 
+            if (method === 'email') {
+              const otp = generateNumericOTP(6);
+              const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+              await env.DB.prepare(
+                'UPDATE user_tfa SET email_otp = ?, email_otp_expires_at = ?, updated_at = ? WHERE user_id = ?'
+              ).bind(otp, expiresAt, new Date().toISOString(), row.id).run();
+
+              await send2FAEmail(env, row.email, otp);
+            }
+
             return jsonResponse({
               require2FA: true,
               tempToken: challengeToken,
-              method: 'totp',
+              method,
+              emailMasked: maskEmail(row.email),
               email: row.email,
             }, 200, request);
           }
 
-          // Verify provided 2FA code (TOTP or backup code)
+          // Verify provided 2FA code (Email OTP, TOTP or backup code)
           let valid = false;
           let newBackupCodesJson: string | null = null;
 
-          if (tfaCode.replace(/\D/g, '').length === 6) {
+          if (method === 'email' && tfaRow.email_otp) {
+            const nowIso = new Date().toISOString();
+            if (tfaRow.email_otp === tfaCode.trim() && (!tfaRow.email_otp_expires_at || tfaRow.email_otp_expires_at > nowIso)) {
+              valid = true;
+              await env.DB.prepare('UPDATE user_tfa SET email_otp = NULL, email_otp_expires_at = NULL WHERE user_id = ?')
+                .bind(row.id).run();
+            }
+          }
+
+          if (!valid && tfaCode.replace(/\D/g, '').length === 6 && tfaRow.secret) {
             valid = await verifyTOTP(tfaRow.secret, tfaCode.replace(/\D/g, ''));
           }
 
@@ -645,8 +748,15 @@ export default {
         }
 
         const tfaRow = (await env.DB.prepare(
-          'SELECT enabled, secret, backup_codes FROM user_tfa WHERE user_id = ?'
-        ).bind(userRow.id).first()) as { enabled: number; secret: string; backup_codes: string } | null;
+          'SELECT enabled, secret, backup_codes, preferred_method, email_otp, email_otp_expires_at FROM user_tfa WHERE user_id = ?'
+        ).bind(userRow.id).first()) as {
+          enabled: number;
+          secret: string;
+          backup_codes: string;
+          preferred_method: string;
+          email_otp?: string;
+          email_otp_expires_at?: string;
+        } | null;
 
         if (!tfaRow || !tfaRow.enabled) {
           return jsonResponse({ error: '2FA is not enabled for this user' }, 400, request);
@@ -654,11 +764,24 @@ export default {
 
         let valid = false;
         let newBackupCodesJson: string | null = null;
+        const method = tfaRow.preferred_method || 'totp';
 
-        if (code.replace(/\D/g, '').length === 6) {
+        // Check Email OTP
+        if (tfaRow.email_otp) {
+          const nowIso = new Date().toISOString();
+          if (tfaRow.email_otp === code.trim() && (!tfaRow.email_otp_expires_at || tfaRow.email_otp_expires_at > nowIso)) {
+            valid = true;
+            await env.DB.prepare('UPDATE user_tfa SET email_otp = NULL, email_otp_expires_at = NULL WHERE user_id = ?')
+              .bind(userRow.id).run();
+          }
+        }
+
+        // Check Authenticator TOTP
+        if (!valid && code.replace(/\D/g, '').length === 6 && tfaRow.secret) {
           valid = await verifyTOTP(tfaRow.secret, code.replace(/\D/g, ''));
         }
 
+        // Check Backup codes
         if (!valid && tfaRow.backup_codes) {
           try {
             const hashedList = JSON.parse(tfaRow.backup_codes) as string[];
@@ -687,6 +810,53 @@ export default {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         return jsonResponse({ error: '2FA verification failed', details: message }, 500, request);
+      }
+    }
+
+    // POST /api/auth/login/2fa/resend - Resend 2FA verification email code
+    if (url.pathname === '/api/auth/login/2fa/resend' && request.method === 'POST') {
+      try {
+        const body = (await request.json()) as { tempToken?: string };
+        const tempToken = body.tempToken?.trim();
+
+        if (!tempToken) {
+          return jsonResponse({ error: 'Challenge token is required' }, 400, request);
+        }
+
+        if (!env.JWT_SECRET) {
+          return jsonResponse({ error: 'Server auth configuration missing' }, 500, request);
+        }
+
+        const challenge = await verifyJWT(tempToken, env.JWT_SECRET);
+        if (!challenge || challenge.type !== '2fa_challenge') {
+          return jsonResponse({ error: '2FA session expired. Please sign in again.' }, 401, request);
+        }
+
+        const userRow = (await env.DB.prepare(
+          'SELECT id, email FROM users WHERE id = ?'
+        ).bind(challenge.id).first()) as { id: string; email: string } | null;
+
+        if (!userRow) {
+          return jsonResponse({ error: 'User not found' }, 404, request);
+        }
+
+        const otp = generateNumericOTP(6);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        const now = new Date().toISOString();
+
+        await env.DB.prepare(
+          'UPDATE user_tfa SET email_otp = ?, email_otp_expires_at = ?, updated_at = ? WHERE user_id = ?'
+        ).bind(otp, expiresAt, now, userRow.id).run();
+
+        await send2FAEmail(env, userRow.email, otp);
+
+        return jsonResponse({
+          success: true,
+          message: `A new 6-digit verification code was sent to ${maskEmail(userRow.email)}`,
+        }, 200, request);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to resend code', details: message }, 500, request);
       }
     }
 
@@ -743,6 +913,31 @@ export default {
       }, 200, request);
     }
 
+    // POST /api/auth/tfa/setup-email - Dispatch email OTP for 2FA setup
+    if (url.pathname === '/api/auth/tfa/setup-email' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      if (!user) return jsonResponse({ error: 'Unauthorized' }, 401, request);
+
+      const otp = generateNumericOTP(6);
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const now = new Date().toISOString();
+
+      await env.DB.prepare(
+        `INSERT INTO user_tfa (user_id, enabled, secret, backup_codes, preferred_method, email_otp, email_otp_expires_at, created_at, updated_at)
+         VALUES (?, 0, '', '[]', 'email', ?, ?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET email_otp = ?, email_otp_expires_at = ?, updated_at = ?`
+      ).bind(user.id, otp, expiresAt, now, now, otp, expiresAt, now).run();
+
+      await send2FAEmail(env, user.email, otp);
+
+      return jsonResponse({
+        success: true,
+        message: `A 6-digit verification code was sent to ${maskEmail(user.email)}`,
+        email: user.email,
+        emailMasked: maskEmail(user.email),
+      }, 200, request);
+    }
+
     // POST /api/auth/tfa/verify-and-enable
     if (url.pathname === '/api/auth/tfa/verify-and-enable' && request.method === 'POST') {
       const user = await getAuthUser(request, env);
@@ -754,6 +949,36 @@ export default {
         return jsonResponse({ error: 'A 6-digit verification code is required' }, 400, request);
       }
 
+      const method = body.method === 'email' ? 'email' : 'totp';
+
+      if (method === 'email') {
+        const row = (await env.DB.prepare(
+          'SELECT email_otp, email_otp_expires_at FROM user_tfa WHERE user_id = ?'
+        ).bind(user.id).first()) as { email_otp?: string; email_otp_expires_at?: string } | null;
+
+        const nowIso = new Date().toISOString();
+        if (!row || !row.email_otp || row.email_otp !== code || (row.email_otp_expires_at && row.email_otp_expires_at < nowIso)) {
+          return jsonResponse({ valid: false, error: 'Invalid or expired email verification code. Please request a new code.' }, 400, request);
+        }
+
+        const { plainCodes, hashedCodes } = await generateHashedBackupCodes(8);
+        const now = new Date().toISOString();
+
+        await env.DB.prepare(
+          `INSERT INTO user_tfa (user_id, enabled, secret, backup_codes, preferred_method, email_otp, email_otp_expires_at, created_at, updated_at)
+           VALUES (?, 1, '', ?, 'email', NULL, NULL, ?, ?)
+           ON CONFLICT(user_id) DO UPDATE SET enabled = 1, preferred_method = 'email', backup_codes = ?, email_otp = NULL, email_otp_expires_at = NULL, updated_at = ?`
+        ).bind(user.id, JSON.stringify(hashedCodes), now, now, JSON.stringify(hashedCodes), now).run();
+
+        return jsonResponse({
+          success: true,
+          valid: true,
+          message: 'Two-factor authentication (Email Verification) enabled successfully',
+          backupCodes: plainCodes,
+        }, 200, request);
+      }
+
+      // Default: Authenticator TOTP
       const row = (await env.DB.prepare(
         'SELECT secret FROM user_tfa WHERE user_id = ?'
       ).bind(user.id).first()) as { secret: string } | null;
@@ -775,13 +1000,13 @@ export default {
       await env.DB.prepare(
         `INSERT INTO user_tfa (user_id, enabled, secret, backup_codes, preferred_method, created_at, updated_at)
          VALUES (?, 1, ?, ?, 'totp', ?, ?)
-         ON CONFLICT(user_id) DO UPDATE SET enabled = 1, secret = ?, backup_codes = ?, updated_at = ?`
+         ON CONFLICT(user_id) DO UPDATE SET enabled = 1, secret = ?, backup_codes = ?, preferred_method = 'totp', updated_at = ?`
       ).bind(user.id, secretToVerify, JSON.stringify(hashedCodes), now, now, secretToVerify, JSON.stringify(hashedCodes), now).run();
 
       return jsonResponse({
         success: true,
         valid: true,
-        message: 'Two-factor authentication enabled successfully',
+        message: 'Two-factor authentication (Authenticator App) enabled successfully',
         backupCodes: plainCodes,
       }, 200, request);
     }

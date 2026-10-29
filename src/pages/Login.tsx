@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
+import { d1Api } from '@/lib/api';
 
 const Login: FC = () => {
   const [email, setEmail] = useState('');
@@ -20,9 +21,11 @@ const Login: FC = () => {
   // 2FA Challenge state
   const [require2FA, setRequire2FA] = useState(false);
   const [tempToken, setTempToken] = useState<string | null>(null);
-  const [tfaMode, setTfaMode] = useState<'totp' | 'backup'>('totp');
+  const [tfaMode, setTfaMode] = useState<'totp' | 'email' | 'backup'>('totp');
+  const [tfaEmailMasked, setTfaEmailMasked] = useState<string>('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const { signIn, complete2FA } = useAuth();
   const { toast } = useToast();
@@ -62,10 +65,15 @@ const Login: FC = () => {
     } else if (result.require2FA && result.tempToken) {
       setTempToken(result.tempToken);
       setRequire2FA(true);
+      const mode = (result.method as 'totp' | 'email') || 'totp';
+      setTfaMode(mode);
+      if (result.emailMasked) setTfaEmailMasked(result.emailMasked);
       setIsLoading(false);
       toast({
         title: 'Two-Factor Authentication required',
-        description: 'Please enter your authentication code or a backup code.',
+        description: mode === 'email'
+          ? `We sent a 6-digit verification code to ${result.emailMasked || 'your email'}.`
+          : 'Please enter the code from your authenticator app or a backup code.',
       });
     } else {
       toast({
@@ -74,6 +82,27 @@ const Login: FC = () => {
       });
       navigate('/dashboard');
       setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!tempToken) return;
+    setIsResending(true);
+    try {
+      const res = await d1Api.resend2FACode(tempToken);
+      toast({
+        title: 'Code resent',
+        description: res.message || 'A new verification code was sent to your email.',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to resend code';
+      toast({
+        variant: 'destructive',
+        title: 'Resend failed',
+        description: msg,
+      });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -105,6 +134,7 @@ const Login: FC = () => {
     setTempToken(null);
     setTwoFactorCode('');
     setTfaMode('totp');
+    setTfaEmailMasked('');
   };
 
   return (
@@ -139,9 +169,9 @@ const Login: FC = () => {
                 </div>
                 <CardTitle className="text-2xl">Two-Factor Authentication</CardTitle>
                 <CardDescription>
-                  {tfaMode === 'totp'
-                    ? 'Enter the 6-digit code from your authenticator app.'
-                    : 'Enter one of your single-use backup recovery codes.'}
+                  {tfaMode === 'totp' && 'Enter the 6-digit code from your authenticator app.'}
+                  {tfaMode === 'email' && `Enter the 6-digit verification code sent to ${tfaEmailMasked || 'your email'}.`}
+                  {tfaMode === 'backup' && 'Enter one of your single-use backup recovery codes.'}
                 </CardDescription>
               </CardHeader>
 
@@ -149,7 +179,9 @@ const Login: FC = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="tfaCode">
-                      {tfaMode === 'totp' ? 'Authenticator Code' : 'Backup Code'}
+                      {tfaMode === 'totp' && 'Authenticator Code'}
+                      {tfaMode === 'email' && 'Email Verification Code'}
+                      {tfaMode === 'backup' && 'Backup Recovery Code'}
                     </Label>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -157,36 +189,84 @@ const Login: FC = () => {
                         id="tfaCode"
                         type="text"
                         autoFocus
-                        placeholder={tfaMode === 'totp' ? '000000' : 'A1B2C3D4'}
+                        placeholder={tfaMode === 'backup' ? 'A1B2C3D4' : '000000'}
                         value={twoFactorCode}
                         onChange={(e) => {
-                          if (tfaMode === 'totp') {
-                            setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6));
-                          } else {
+                          if (tfaMode === 'backup') {
                             setTwoFactorCode(e.target.value.trim().toUpperCase());
+                          } else {
+                            setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6));
                           }
                         }}
-                        maxLength={tfaMode === 'totp' ? 6 : 16}
+                        maxLength={tfaMode === 'backup' ? 16 : 6}
                         className="pl-10 text-center tracking-widest font-mono text-lg"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="flex justify-center">
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="text-xs text-muted-foreground hover:text-primary"
-                      onClick={() => {
-                        setTfaMode(tfaMode === 'totp' ? 'backup' : 'totp');
-                        setTwoFactorCode('');
-                      }}
-                    >
-                      {tfaMode === 'totp'
-                        ? 'Having trouble? Use a backup code instead'
-                        : 'Use authenticator app code instead'}
-                    </Button>
+                  <div className="flex flex-col gap-2 items-center">
+                    {tfaMode === 'email' && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isResending}
+                        className="text-xs text-primary hover:underline h-7"
+                        onClick={handleResendCode}
+                      >
+                        {isResending ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                            Resending code...
+                          </>
+                        ) : (
+                          "Didn't receive the email? Resend code"
+                        )}
+                      </Button>
+                    )}
+
+                    <div className="flex flex-wrap justify-center items-center gap-3 text-xs text-muted-foreground">
+                      {tfaMode !== 'totp' && (
+                        <button
+                          type="button"
+                          className="hover:text-primary underline cursor-pointer"
+                          onClick={() => {
+                            setTfaMode('totp');
+                            setTwoFactorCode('');
+                          }}
+                        >
+                          Use Authenticator
+                        </button>
+                      )}
+                      {tfaMode !== 'email' && (
+                        <button
+                          type="button"
+                          className="hover:text-primary underline cursor-pointer"
+                          onClick={async () => {
+                            setTfaMode('email');
+                            setTwoFactorCode('');
+                            if (tempToken) {
+                              await handleResendCode();
+                            }
+                          }}
+                        >
+                          Send Code via Email
+                        </button>
+                      )}
+                      {tfaMode !== 'backup' && (
+                        <button
+                          type="button"
+                          className="hover:text-primary underline cursor-pointer"
+                          onClick={() => {
+                            setTfaMode('backup');
+                            setTwoFactorCode('');
+                          }}
+                        >
+                          Use Backup Code
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
 
@@ -196,7 +276,7 @@ const Login: FC = () => {
                     className="w-full gradient-primary text-white"
                     disabled={
                       isVerifying2FA ||
-                      (tfaMode === 'totp' ? twoFactorCode.length !== 6 : twoFactorCode.length < 6)
+                      (tfaMode === 'backup' ? twoFactorCode.length < 6 : twoFactorCode.length !== 6)
                     }
                   >
                     {isVerifying2FA ? (

@@ -16,6 +16,7 @@ export interface SignInResult {
   require2FA?: boolean;
   tempToken?: string;
   method?: string;
+  emailMasked?: string;
 }
 
 interface AuthContextType {
@@ -144,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           require2FA: true,
           tempToken: res.tempToken,
           method: res.method || 'totp',
+          emailMasked: res.emailMasked || res.email,
         };
       }
       if (res.user) {

@@ -109,7 +109,16 @@ export const d1Api = {
     email: string,
     password: string,
     tfaCode?: string
-  ): Promise<{ success: boolean; user?: User; token?: string; require2FA?: boolean; tempToken?: string; method?: string }> {
+  ): Promise<{
+    success: boolean;
+    user?: User;
+    token?: string;
+    require2FA?: boolean;
+    tempToken?: string;
+    method?: string;
+    emailMasked?: string;
+    email?: string;
+  }> {
     const data = await apiFetch<{
       success: boolean;
       user?: User;
@@ -117,6 +126,8 @@ export const d1Api = {
       require2FA?: boolean;
       tempToken?: string;
       method?: string;
+      emailMasked?: string;
+      email?: string;
     }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password, tfaCode }),
@@ -151,7 +162,11 @@ export const d1Api = {
     return apiFetch('/api/auth/tfa/setup', { method: 'POST' });
   },
 
-  async verifyAndEnableTFA(code: string, secret?: string): Promise<{
+  async setupEmailTFA(): Promise<{ success: boolean; message: string; email: string; emailMasked: string }> {
+    return apiFetch('/api/auth/tfa/setup-email', { method: 'POST' });
+  },
+
+  async verifyAndEnableTFA(code: string, secret?: string, method?: 'totp' | 'email'): Promise<{
     success: boolean;
     valid: boolean;
     backupCodes: string[];
@@ -159,7 +174,14 @@ export const d1Api = {
   }> {
     return apiFetch('/api/auth/tfa/verify-and-enable', {
       method: 'POST',
-      body: JSON.stringify({ code, secret }),
+      body: JSON.stringify({ code, secret, method }),
+    });
+  },
+
+  async resend2FACode(tempToken: string): Promise<{ success: boolean; message: string }> {
+    return apiFetch('/api/auth/login/2fa/resend', {
+      method: 'POST',
+      body: JSON.stringify({ tempToken }),
     });
   },
 
