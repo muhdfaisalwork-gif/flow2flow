@@ -265,4 +265,19 @@ export const d1Api = {
       method: 'DELETE',
     });
   },
+
+  // Email Dispatch via Resend
+  async sendEmail(payload: {
+    to: string | string[];
+    from?: string;
+    subject: string;
+    text?: string;
+    html?: string;
+    replyTo?: string;
+  }): Promise<{ success: boolean; id?: string }> {
+    return apiFetch<{ success: boolean; id?: string }>('/api/email/send', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };

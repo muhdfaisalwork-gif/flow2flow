@@ -30,6 +30,7 @@ export interface Env {
   PAGES_ORIGIN?: string;
   JWT_SECRET?: string;
   GROQ_API_KEY?: string;
+  RESEND_API_KEY?: string;
   DB: D1Database;
   AI?: {
     run: (model: string, input: Record<string, unknown>) => Promise<unknown>;
@@ -1352,6 +1353,56 @@ export default {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         return jsonResponse({ error: 'Failed to save graph memory', details: message }, 500, request);
+      }
+    }
+
+    // POST /api/email/send - Dispatch transactional/support emails via Resend
+    if (url.pathname === '/api/email/send' && request.method === 'POST') {
+      try {
+        const body = (await request.json()) as {
+          to: string | string[];
+          from?: string;
+          subject: string;
+          text?: string;
+          html?: string;
+          replyTo?: string;
+        };
+
+        if (!body.to || !body.subject || (!body.text && !body.html)) {
+          return jsonResponse({ error: 'Missing required fields: to, subject, and text/html' }, 400, request);
+        }
+
+        const apiKey = env.RESEND_API_KEY;
+        if (!apiKey) {
+          return jsonResponse({ error: 'RESEND_API_KEY secret not configured in worker environment' }, 500, request);
+        }
+        const fromAddress = body.from || 'Shadow Flow <support@shadowflow.work>';
+
+        const resendRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: fromAddress,
+            to: Array.isArray(body.to) ? body.to : [body.to],
+            subject: body.subject,
+            text: body.text || undefined,
+            html: body.html || undefined,
+            reply_to: body.replyTo || undefined,
+          }),
+        });
+
+        const resendData = (await resendRes.json()) as Record<string, unknown>;
+        if (!resendRes.ok) {
+          return jsonResponse({ error: 'Resend API error', details: resendData }, resendRes.status, request);
+        }
+
+        return jsonResponse({ success: true, ...resendData }, 200, request);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResponse({ error: 'Failed to send email', details: message }, 500, request);
       }
     }
 
