@@ -7,6 +7,7 @@ import {
   getAllBlogPosts,
   fetchBlogPostBySlug,
   fetchDynamicBlogs,
+  PRESET_BLOG_POSTS,
   BlogPost as BlogPostType,
 } from "@/lib/seo/blogEngine";
 import { generateTechArticleSchema } from "@/lib/seo/seoEngine";
@@ -54,6 +55,11 @@ export default function BlogPost() {
         if (!isMounted) return;
         if (found && found.content && found.content.trim()) {
           setPost(found);
+        } else {
+          const fallback = PRESET_BLOG_POSTS.find((p) => p.slug === slug);
+          if (fallback && fallback.content && fallback.content.trim()) {
+            setPost(fallback);
+          }
         }
       })
       .catch((err) => console.warn("Failed to load article by slug:", err))
@@ -182,7 +188,8 @@ export default function BlogPost() {
   // Simple Markdown renderer for headings, code blocks, lists, quotes, tables
   const renderMarkdownContent = (markdown: string) => {
     if (!markdown || !markdown.trim()) return null;
-    const lines = markdown.split("\n");
+    const normalizedMarkdown = markdown.replace(/\r\n/g, "\n");
+    const lines = normalizedMarkdown.split("\n");
     const elements: JSX.Element[] = [];
     let inCodeBlock = false;
     let codeLanguage = "";
@@ -246,16 +253,28 @@ export default function BlogPost() {
             {renderInlineMarkdown(line.replace("### ", ""))}
           </h3>
         );
+      } else if (line.startsWith("#### ")) {
+        elements.push(
+          <h4 key={index} className="text-lg sm:text-xl font-semibold mt-4 mb-2 text-foreground">
+            {renderInlineMarkdown(line.replace("#### ", ""))}
+          </h4>
+        );
       } else if (line.startsWith("> ")) {
         elements.push(
           <blockquote key={index} className="my-4 border-l-4 border-primary pl-4 italic text-muted-foreground bg-primary/5 py-2 pr-4 rounded-r-lg">
             {renderInlineMarkdown(line.replace("> ", ""))}
           </blockquote>
         );
-      } else if (line.startsWith("- ")) {
+      } else if (line.startsWith("- ") || line.startsWith("* ")) {
         elements.push(
           <li key={index} className="ml-6 list-disc text-sm text-foreground/90 my-1 leading-relaxed">
-            {renderInlineMarkdown(line.replace("- ", ""))}
+            {renderInlineMarkdown(line.replace(/^[-*]\s+/, ""))}
+          </li>
+        );
+      } else if (/^\d+\.\s/.test(line)) {
+        elements.push(
+          <li key={index} className="ml-6 list-decimal text-sm text-foreground/90 my-1 leading-relaxed">
+            {renderInlineMarkdown(line.replace(/^\d+\.\s+/, ""))}
           </li>
         );
       } else if (line.startsWith("|")) {
@@ -276,6 +295,20 @@ export default function BlogPost() {
       }
     });
 
+    if (inCodeBlock && codeBuffer.length > 0) {
+      const codeString = codeBuffer.join("\n");
+      elements.push(
+        <div key="unclosed-code" className="my-6 rounded-xl overflow-hidden border border-border bg-muted/60">
+          <div className="flex items-center justify-between px-4 py-2 bg-muted/80 border-b border-border text-xs text-muted-foreground font-mono">
+            <span>{codeLanguage || "plaintext"}</span>
+          </div>
+          <pre className="p-4 text-xs font-mono overflow-x-auto text-foreground leading-relaxed">
+            <code>{codeString}</code>
+          </pre>
+        </div>
+      );
+    }
+
     return elements;
   };
 
@@ -289,7 +322,7 @@ export default function BlogPost() {
 
       <Header />
 
-      <main className="flex-1 pt-24 pb-20">
+      <main className="flex-1 pt-28 sm:pt-32 pb-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           {/* Breadcrumb / Back button */}
           <div className="flex items-center justify-between mb-8">
