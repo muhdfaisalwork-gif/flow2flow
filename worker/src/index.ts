@@ -407,7 +407,8 @@ async function getEffectiveUserId(request: Request, env: Env): Promise<{ userId:
   if (user) {
     return { userId: user.id, isAuthenticated: true };
   }
-  const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'guest';
+  // Rely strictly on Cloudflare edge-injected header to prevent IP spoofing
+  const ip = request.headers.get('cf-connecting-ip') || 'guest';
   return { userId: `ip_${ip.replace(/[^a-zA-Z0-9_.-]/g, '_')}`, isAuthenticated: false };
 }
 
@@ -1369,6 +1370,11 @@ export default {
 
     // Webhook receiver endpoint
     if (url.pathname.startsWith('/webhook/')) {
+      const contentLength = parseInt(request.headers.get('content-length') || '0', 10);
+      if (contentLength > 256 * 1024) {
+        return jsonResponse({ error: 'Payload Too Large: maximum webhook payload is 256KB' }, 413, request);
+      }
+
       const workflowId = url.pathname.replace('/webhook/', '').trim();
       if (!workflowId) {
         return jsonResponse({ error: 'Missing workflow ID in webhook path' }, 400, request);
@@ -1671,8 +1677,15 @@ export default {
       }
     }
 
-    // POST /api/blogs - Create or update a blog post
+    // POST /api/blogs - Create or update a blog post (Protected: Admin or Internal Key)
     if (url.pathname === '/api/blogs' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      const isInternalBot = (env.JWT_SECRET && request.headers.get('x-internal-secret') === env.JWT_SECRET) ||
+                            (env.JWT_SECRET && request.headers.get('x-admin-key') === env.JWT_SECRET);
+      if (!user && !isInternalBot) {
+        return jsonResponse({ error: 'Unauthorized: Authentication required to publish blog posts' }, 401, request);
+      }
+
       try {
         const body = (await request.json()) as Record<string, unknown>;
         const slug = String(body.slug || '').trim();
@@ -1744,8 +1757,25 @@ export default {
       }
     }
 
-    // POST /api/seo/generate - Autonomous Edge AI Blog Article Writer
+    // POST /api/seo/generate - Autonomous Edge AI Blog Article Writer (Quota & Auth Protected)
     if (url.pathname === '/api/seo/generate' && request.method === 'POST') {
+      const { userId, isAuthenticated } = await getEffectiveUserId(request, env);
+      if (!isAuthenticated) {
+        return jsonResponse({ error: 'Unauthorized: Please log in to generate AI SEO articles' }, 401, request);
+      }
+
+      const quota = await checkAndIncrementUsage(userId, env);
+      if (!quota.allowed) {
+        return jsonResponse(
+          {
+            error: `Daily AI quota reached (${quota.used}/${quota.limit}). Upgrade to Pro or Max for additional volume.`,
+            code: 'QUOTA_EXCEEDED',
+          },
+          429,
+          request
+        );
+      }
+
       try {
         const body = (await request.json()) as {
           topic?: string;
@@ -1842,8 +1872,14 @@ Write the full article now in Markdown.`;
       }
     }
 
-    // POST /api/email/send - Dispatch transactional/support emails via Resend
+    // POST /api/email/send - Dispatch transactional/support emails via Resend (Auth Protected)
     if (url.pathname === '/api/email/send' && request.method === 'POST') {
+      const user = await getAuthUser(request, env);
+      const isInternalBot = Boolean(env.JWT_SECRET && request.headers.get('x-internal-secret') === env.JWT_SECRET);
+      if (!user && !isInternalBot) {
+        return jsonResponse({ error: 'Unauthorized: Authentication required to send emails' }, 401, request);
+      }
+
       try {
         const body = (await request.json()) as {
           to: string | string[];
@@ -1862,7 +1898,8 @@ Write the full article now in Markdown.`;
         if (!apiKey) {
           return jsonResponse({ error: 'RESEND_API_KEY secret not configured in worker environment' }, 500, request);
         }
-        const fromAddress = body.from || 'Shadow Flow <support@shadowflow.work>';
+        // Enforce verified platform sender address to prevent domain spoofing
+        const fromAddress = 'Shadow Flow <support@shadowflow.work>';
 
         const resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -1876,7 +1913,7 @@ Write the full article now in Markdown.`;
             subject: body.subject,
             text: body.text || undefined,
             html: body.html || undefined,
-            reply_to: body.replyTo || undefined,
+            reply_to: body.replyTo || (user ? user.email : undefined),
           }),
         });
 
