@@ -13,6 +13,7 @@
 
 ## Technical Engineering Blog
 
+- [Code vs Canvas: Comparing LangChain and Visual DAG Builders for Enterprise Multi-Agent Systems](https://shadowflow.work/blog/langchain-vs-visual-dag-workflows-code-vs-canvas): An objective performance and maintenance comparison between code-first frameworks and visual node canvases for team-wide automation handoff.
 - [Building an Autonomous B2B Lead Enrichment Pipeline with Webhooks, Clay, and Resend](https://shadowflow.work/blog/building-autonomous-b2b-lead-generation-crm-pipeline): Complete architecture for automating inbound webhook capture, domain scraping, contact enrichment, and transactional email routing with sub-second execution.
 - [Fixing Broken AI Pipelines for Free: Deterministic Graph Repair with the Zero-Cost Heuristic Engine](https://shadowflow.work/blog/deterministic-graph-repair-zero-cost-heuristic-engine): Why relying on recursive LLM calls to fix syntax errors is expensive and slow, and how deterministic graph analysis resolves missing connectors instantly.
 - [Serverless DAG Orchestration: Sub-50ms Workflow Execution on Cloudflare Workers and D1](https://shadowflow.work/blog/serverless-dag-orchestration-cloudflare-workers-d1): How running directed acyclic graph execution on Cloudflare edge isolates memory, prevents container cold starts, and scales without VM overhead.
