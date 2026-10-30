@@ -1,212 +1,186 @@
-import { motion } from "framer-motion";
-import { ExternalLink, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ExternalLink,
+  ArrowRight,
+  Search,
+  Cpu,
+  Database,
+  Mail,
+  GitBranch,
+  Terminal,
+  FileCode2,
+  CheckCircle2,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
-const integrations = [
-  { name: "Slack", emoji: "💬", category: "Communication" },
-  { name: "GitHub", emoji: "🐙", category: "Development" },
-  { name: "Notion", emoji: "📝", category: "Productivity" },
-  { name: "Google Sheets", emoji: "📊", category: "Productivity" },
-  { name: "Discord", emoji: "🎮", category: "Communication" },
-  { name: "Stripe", emoji: "💳", category: "Payments" },
-  { name: "OpenAI", emoji: "🤖", category: "AI" },
-  { name: "PostgreSQL", emoji: "🐘", category: "Database" },
-  { name: "Airtable", emoji: "📋", category: "Productivity" },
-  { name: "Linear", emoji: "📐", category: "Development" },
-  { name: "Jira", emoji: "🎯", category: "Development" },
-  { name: "Twilio", emoji: "📱", category: "Communication" },
-  { name: "AWS S3", emoji: "☁️", category: "Storage" },
-  { name: "MongoDB", emoji: "🍃", category: "Database" },
-  { name: "Anthropic", emoji: "🧠", category: "AI" },
-  { name: "Supabase", emoji: "⚡", category: "Database" },
+export interface IntegrationItem {
+  name: string;
+  category: "AI & LLMs" | "Databases" | "Messaging" | "Development" | "Productivity";
+  icon: string;
+  description: string;
+  popular?: boolean;
+}
+
+const allIntegrations: IntegrationItem[] = [
+  { name: "DeepSeek Reasoner", category: "AI & LLMs", icon: "🤖", description: "R1 reasoning model integration for forensic analysis and multi-step deduction.", popular: true },
+  { name: "Local Ollama", category: "AI & LLMs", icon: "💻", description: "Private local inference for Gemma 4 and Llama 3 with zero external cloud API spend.", popular: true },
+  { name: "Model Context Protocol", category: "AI & LLMs", icon: "🔌", description: "Standardized tool discovery protocol connecting compliant MCP servers.", popular: true },
+  { name: "Cloudflare D1", category: "Databases", icon: "⚡", description: "Edge SQLite database with distributed read replication and sub-15ms mutations.", popular: true },
+  { name: "PostgreSQL", category: "Databases", icon: "🐘", description: "Direct SQL connection pools with parameter binding and transaction rollbacks.", popular: true },
+  { name: "Supabase", category: "Databases", icon: "⚡", description: "Realtime tables, storage buckets, and Postgres Row-Level Security policies.", popular: true },
+  { name: "Resend", category: "Messaging", icon: "📧", description: "Transactional email delivery with high inbox deliverability and click tracking.", popular: true },
+  { name: "Slack", category: "Messaging", icon: "💬", description: "Post rich block-kit incident alerts, user approvals, and operational summaries.", popular: true },
+  { name: "Discord", category: "Messaging", icon: "🎮", description: "Webhook and bot event listeners with embed payload formatting.", popular: false },
+  { name: "GitHub", category: "Development", icon: "🐙", description: "Pull request triggers, issue triage, and commit deployment webhooks.", popular: true },
+  { name: "Linear", category: "Development", icon: "📐", description: "Automated ticket creation, status synchronization, and engineering triage.", popular: true },
+  { name: "Notion", category: "Productivity", icon: "📝", description: "Read and write database pages, sync executive briefings, and catalog research.", popular: false },
+  { name: "Google Sheets", category: "Productivity", icon: "📊", description: "Append rows, batch lookup inventory, and export reporting tables.", popular: true },
+  { name: "Airtable", category: "Productivity", icon: "📋", description: "Relational bases with schema validation and webhook triggers.", popular: false },
+  { name: "Stripe", category: "Messaging", icon: "💳", description: "Webhook event intake for payment intents, customer invoices, and disputes.", popular: true },
+  { name: "Clay", category: "Productivity", icon: "🧊", description: "Firmographic data enrichment, technographic signals, and domain lookups.", popular: true },
 ];
 
-const automationPlatforms = [
-  {
-    name: "n8n",
-    description: "Import/export workflows to n8n format for self-hosted automation",
-    logo: "🔄",
-    color: "from-orange-500 to-red-500",
-    url: "https://n8n.io",
-    features: ["Full workflow compatibility", "Node mapping", "Self-hosted"],
-  },
-  {
-    name: "Activepieces",
-    description: "Export workflows compatible with Activepieces automation platform",
-    logo: "🧩",
-    color: "from-blue-500 to-cyan-500",
-    url: "https://activepieces.com",
-    features: ["Trigger support", "Action mapping", "Open source"],
-  },
-  {
-    name: "Zapier",
-    description: "Export your workflows in Zapier-compatible format",
-    logo: "⚡",
-    color: "from-orange-400 to-amber-500",
-    url: "https://zapier.com",
-    features: ["Zap export", "Multi-step workflows", "5000+ apps"],
-  },
-  {
-    name: "Make",
-    description: "Export scenarios compatible with Make (formerly Integromat)",
-    logo: "🎨",
-    color: "from-purple-500 to-pink-500",
-    url: "https://make.com",
-    features: ["Scenario format", "Visual workflows", "Coming soon"],
-  },
-];
+const categories = ["All", "AI & LLMs", "Databases", "Messaging", "Development", "Productivity"] as const;
 
 export function IntegrationsSection() {
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredIntegrations = allIntegrations.filter((item) => {
+    const matchesCat = selectedCategory === "All" || item.category === selectedCategory;
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
   return (
-    <section className="py-24 relative overflow-hidden" id="integrations">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-24 relative overflow-hidden bg-background" id="integrations">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
+        
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <span className="text-sm font-medium text-electric uppercase tracking-wider">
-            Integrations & Compatibility
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mt-4 mb-6">
-            Connect to{" "}
-            <span className="gradient-text">Everything</span>
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            500+ pre-built integrations plus seamless import/export with other automation platforms.
-          </p>
-        </motion.div>
-
-        {/* Automation Platform Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-16"
-        >
-          <h3 className="text-xl font-semibold text-center mb-8">
-            Works with your favorite automation tools
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {automationPlatforms.map((platform, index) => (
-              <motion.a
-                key={platform.name}
-                href={platform.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group relative p-6 rounded-2xl bg-card border border-border hover:border-electric/50 transition-all duration-300 hover:shadow-lg hover:shadow-electric/10"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${platform.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity`} />
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">{platform.logo}</span>
-                    <h4 className="font-semibold text-lg">{platform.name}</h4>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {platform.description}
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {platform.features.map((feature) => (
-                      <span
-                        key={feature}
-                        className="px-2 py-1 text-xs rounded-full bg-secondary text-secondary-foreground"
-                      >
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </motion.a>
-            ))}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-semibold mb-4">
+            <Cpu className="w-3.5 h-3.5" />
+            Universal Interoperability
           </div>
-        </motion.div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4">
+            Connect to 500+ Protocols, APIs, & Tools
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+            Wire local LLMs, cloud databases, Model Context Protocol servers, and webhooks into your DAG without writing custom wrapper boilerplate.
+          </p>
 
-        {/* Scrolling Integration Cards */}
-        <div className="relative">
-          {/* Gradient Masks */}
-          <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-
-          {/* Row 1 - Left to Right */}
-          <motion.div
-            className="flex gap-4 mb-4"
-            animate={{ x: [0, -1000] }}
-            transition={{
-              duration: 30,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          >
-            {[...integrations, ...integrations].map((integration, i) => (
-              <div
-                key={`row1-${i}`}
-                className="flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border hover:border-electric/50 transition-colors cursor-pointer"
-              >
-                <span className="text-2xl">{integration.emoji}</span>
-                <div>
-                  <div className="font-medium text-sm">{integration.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {integration.category}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Row 2 - Right to Left */}
-          <motion.div
-            className="flex gap-4"
-            animate={{ x: [-1000, 0] }}
-            transition={{
-              duration: 30,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          >
-            {[...integrations.slice().reverse(), ...integrations.slice().reverse()].map(
-              (integration, i) => (
-                <div
-                  key={`row2-${i}`}
-                  className="flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border hover:border-electric/50 transition-colors cursor-pointer"
+          {/* Search & Category Filter */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Category Pills */}
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    selectedCategory === cat
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60"
+                  }`}
                 >
-                  <span className="text-2xl">{integration.emoji}</span>
-                  <div>
-                    <div className="font-medium text-sm">{integration.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {integration.category}
-                    </div>
-                  </div>
-                </div>
-              )
-            )}
-          </motion.div>
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Live Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search integrations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
-          <p className="text-muted-foreground mb-4">
-            Can't find what you need? Build custom connectors in minutes.
-          </p>
-          <Button variant="outline" className="gap-2">
-            View all integrations
-            <ArrowRight className="w-4 h-4" />
+        {/* Universal n8n Importer Feature Banner */}
+        <div className="mb-12 p-6 sm:p-8 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-purple-500/10 to-card shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center shrink-0 text-primary">
+              <FileCode2 className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-lg text-foreground">
+                  Universal n8n JSON Importer
+                </h3>
+                <Badge variant="outline" className="text-[10px] bg-background font-mono text-emerald-400 border-emerald-500/30">
+                  100% Compatible
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+                Already have workflows built in n8n? Export your JSON files and import them directly into Shadow Flow. Our engine preserves node parameters, credentials, and automatically calculates Kahn's topological layout.
+              </p>
+            </div>
+          </div>
+
+          <Button asChild className="gap-2 font-semibold shrink-0">
+            <Link to="/demo">
+              Test n8n Importer <ArrowRight className="w-4 h-4" />
+            </Link>
           </Button>
-        </motion.div>
+        </div>
+
+        {/* Integrations Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <AnimatePresence>
+            {filteredIntegrations.map((item) => (
+              <motion.div
+                key={item.name}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.15 }}
+                className="p-4 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/50 transition-all shadow-sm hover:shadow-md flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-2xl">{item.icon}</span>
+                    <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground bg-muted/30">
+                      {item.category}
+                    </Badge>
+                  </div>
+                  <h4 className="font-bold text-sm text-foreground mb-1">
+                    {item.name}
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-2 border-t border-border/40 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
+                  <span>Protocol: REST / MCP</span>
+                  <span className="text-emerald-400 font-semibold">Active</span>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="mt-12 text-center">
+          <Button asChild variant="outline" className="gap-2 font-semibold">
+            <Link to="/integrations">
+              Browse All 500+ Ecosystem Connectors <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
+        </div>
+
       </div>
     </section>
   );
