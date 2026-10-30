@@ -72,6 +72,10 @@ function jsonResponse(data: unknown, status = 200, request?: Request): Response 
     status,
     headers: {
       'Content-Type': 'application/json',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
       ...cors,
     },
   });
@@ -1579,7 +1583,8 @@ export default {
                label = excluded.label,
                node_type = excluded.node_type,
                data = excluded.data,
-               updated_at = excluded.updated_at`
+               updated_at = excluded.updated_at
+             WHERE user_graph_memory.user_id = excluded.user_id`
           )
             .bind(
               node.id,
@@ -2071,15 +2076,22 @@ Write the full article now in Markdown.`;
     if (originRes.status === 404 && !hasExtension) {
       const indexUrl = new URL('/index.html', pagesOrigin);
       const indexRes = await fetch(indexUrl.toString());
+      const headers = new Headers(indexRes.headers);
+      headers.set('X-Content-Type-Options', 'nosniff');
+      headers.set('X-Frame-Options', 'SAMEORIGIN');
+      headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
       return new Response(indexRes.body, {
         status: 200,
-        headers: indexRes.headers,
+        headers,
       });
     }
 
+    const headers = new Headers(originRes.headers);
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     return new Response(originRes.body, {
       status: originRes.status,
-      headers: originRes.headers,
+      headers,
     });
   },
 };
